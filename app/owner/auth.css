@@ -1,0 +1,20 @@
+.ow-root-auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--s6) var(--s4); }
+.ow-root-auth-box { width: 100%; max-width: 400px; }
+.ow-root-auth-wide { max-width: 720px; }
+.ow-root-auth-brand { display: flex; align-items: center; gap: 10px; margin-bottom: var(--s7); }
+.ow-root-auth-logo {
+  width: 40px; height: 40px; border-radius: var(--r-md); background: var(--primary);
+  display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px;
+}
+.ow-root-auth-brandName { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+.ow-root-auth-title { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.25; margin-bottom: var(--s2); }
+.ow-root-auth-sub { color: var(--fg-3); margin-bottom: var(--s7); }
+.ow-root-auth-form { display: flex; flex-direction: column; gap: var(--s4); }
+.ow-root-auth-formError { background: var(--red-tint); color: #bb2523; padding: 12px 14px; border-radius: var(--r-md); font-size: 14px; }
+.ow-root-auth-foot { margin-top: var(--s6); text-align: center; color: var(--fg-3); font-size: 14px; }
+.ow-root-auth-foot a { color: var(--fg-1); font-weight: 700; margin-left: 6px; }
+.ow-root-auth-demo { margin-top: var(--s5); padding: 12px 14px; background: var(--primary-tint); color: var(--mint8); border-radius: var(--r-md); font-size: 13px; }
+.ow-root-auth-section { margin-top: var(--s7); }
+.ow-root-auth-sectionTitle { font-size: 17px; font-weight: 800; margin-bottom: var(--s4); }
+.ow-root-auth-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); }
+@media (max-width: 560px) { .ow-root-auth-grid2 { grid-template-columns: 1fr; } }

@@ -1,0 +1,27 @@
+// reviews.css 의 클래스 이름 (CSS Modules 대신 쓰는 이름표)
+const s = {
+  'bigRating': 'ow-storeId-reviews-reviews-bigRating',
+  'card': 'ow-storeId-reviews-reviews-card',
+  'cardTop': 'ow-storeId-reviews-reviews-cardTop',
+  'content': 'ow-storeId-reviews-reviews-content',
+  'filter': 'ow-storeId-reviews-reviews-filter',
+  'head': 'ow-storeId-reviews-reviews-head',
+  'hidden': 'ow-storeId-reviews-reviews-hidden',
+  'list': 'ow-storeId-reviews-reviews-list',
+  'menus': 'ow-storeId-reviews-reviews-menus',
+  'modalForm': 'ow-storeId-reviews-reviews-modalForm',
+  'page': 'ow-storeId-reviews-reviews-page',
+  'pager': 'ow-storeId-reviews-reviews-pager',
+  'quote': 'ow-storeId-reviews-reviews-quote',
+  'reply': 'ow-storeId-reviews-reviews-reply',
+  'replyActions': 'ow-storeId-reviews-reviews-replyActions',
+  'replyForm': 'ow-storeId-reviews-reviews-replyForm',
+  'replyFormFoot': 'ow-storeId-reviews-reviews-replyFormFoot',
+  'replyHead': 'ow-storeId-reviews-reviews-replyHead',
+  'reportBtn': 'ow-storeId-reviews-reviews-reportBtn',
+  'stars': 'ow-storeId-reviews-reviews-stars',
+  'starsSm': 'ow-storeId-reviews-reviews-starsSm',
+  'summary': 'ow-storeId-reviews-reviews-summary',
+  'toolbar': 'ow-storeId-reviews-reviews-toolbar',
+};
+export default s;
