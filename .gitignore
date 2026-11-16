@@ -224,3 +224,13 @@ __marimo__/
 *.db
 *.db-shm
 *.db-wal
+# Administrator local environment / generated artifacts
+.env.*
+!.env.example
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+/out/
+/coverage/
