@@ -1,0 +1,37 @@
+/* Reference: https://www.getdesign.kr/services/baemin
+   Theme tokens applied to the administrator workspace only. */
+.admin-root {
+  --adm-mint: oklch(0.88 0.18 178);
+  --adm-mint-hover: oklch(0.69 0.13 184);
+  --adm-mint-soft: oklch(0.97 0.05 178);
+  --adm-mint-dark: oklch(0.40 0.07 191);
+  --adm-navy: oklch(0.30 0.13 286);
+  --adm-ink: oklch(0.18 0 0);
+  --adm-muted: #66696e;
+  --adm-line: #e9e9ed;
+  --adm-bg: oklch(0.97 0.00 286);
+  --adm-radius: 16px;
+}
+.adm-btn { border-radius: 9999px; }
+.adm-btn-primary { color: #151718; }
+.adm-btn-primary:hover:not(:disabled) { background: var(--adm-mint-hover); color: #121717; }
+.adm-card,.adm-stat-card,.adm-quick-card,.adm-guide { border-radius: 16px; }
+.adm-dialog { border-radius: 24px; }
+.adm-sheet { border-radius: 24px 0 0 24px; }
+.adm-searchbox,.adm-input,.adm-textarea,.adm-select { border-radius: 8px; }
+.adm-mode-box { background: #f7f7f9; }
+.adm-stat-card:first-child { background: var(--adm-mint-soft); border-color: #bceee3; }
+.adm-stat-top,.adm-stat-card p,.adm-eyebrow,.adm-queue-body small,
+.adm-guide p,.adm-footer-note,.adm-table th,.adm-keyvalues dt,
+.adm-login-sub,.adm-login-foot,.adm-hint,.adm-caption { color: var(--adm-muted); }
+.adm-quick-card { background: var(--adm-navy); border-color: transparent; color: #fff; }
+.adm-quick-card p { color: #dedbf0; }
+.adm-quick-card .adm-btn-outline { color: var(--adm-navy); border-color: #fff; }
+.adm-login-visual { background: var(--adm-mint); }
+.adm-login-visual > p { color: #175849; }
+.adm-login-visual::after { border-color: #ffffff55; }
+.adm-login-graphic > span { color: var(--adm-navy); }
+.adm-login-graphic > span:nth-child(2) { background: var(--adm-navy); color: #fff; }
+.adm-toast { border-radius: 9999px; background: #202023; }
+.adm-toast-error { background: #7d2929; }
+@media (max-width:760px) { .adm-sheet { border-radius: 0; } }
