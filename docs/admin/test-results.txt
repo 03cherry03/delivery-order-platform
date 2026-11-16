@@ -1,0 +1,26 @@
+PASS A-03 / unauthenticated access is rejected
+PASS A-01 / invalid credentials are rejected
+PASS Authorization / non-admin member cannot access admin routes
+PASS A-01 A-03 / administrator login and session
+PASS X-00 / dashboard summary
+PASS X-01 / application list, ordering, paging and status validation
+PASS X-02 / full application details and hours
+PASS X-03 / approval updates application and current store status
+PASS X-04 / rejection reason is required; invalid write leaves state intact
+PASS X-05 X-06 / reported review and linked order/writer
+PASS X-07 / rejecting a report cannot restrict its author
+PASS X-07 / accepted report hides review and creates restriction
+PASS X-14 / member search excludes administrators
+PASS X-09 / customer-only restriction and duplicate protection
+PASS X-08 X-10 / active list, release and release conflict
+PASS X-11 X-12 / order lookup and amount consistency
+PASS X-13 / completed orders cannot be canceled
+PASS X-13 / cancellation and one-time point refund
+PASS Mock storage / failed transaction rolls back
+PASS Mock isolation / owner storage is never accessed or overwritten
+PASS A-02 / logout invalidates admin session
+PASS Demo reset / administrator data only
+PASS Real-mode client / X-00 through X-14 paths, payloads and credentials
+PASS Real-mode client / HTTP conflicts are not reported as success
+
+24 test groups passed. No real backend or Next.js build was executed.
