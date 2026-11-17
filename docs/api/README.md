@@ -14,9 +14,10 @@
 
 ### 인증·세션
 - 로그인(A-01)하면 서버가 HMAC 서명 쿠키를 발급한다(Node `crypto`). 쿠키 이름·수명은 [auth.md](auth.md)에 있다.
+- 서명 키는 환경변수 `SESSION_SECRET`이다. 개발(`next dev`)에서는 키가 없으면 개발용 기본값을 쓴다. production(`next start`)에서 키가 없으면 로그인과 인증이 필요한 요청이 모두 500으로 거부된다(공개된 기본값으로 쿠키를 위조하지 못하게 함).
 - 서버는 요청마다 쿠키 서명을 검증하고 `TB_MBR`을 다시 읽는다. `TB_MBR.MBR_STTS`가 `ACTIVE`가 아니면 401, `TB_MBR.MBR_ROLE_CD`가 경로의 역할과 다르면 403이다.
 - 경로별 역할: `/api/customer/*` CUSTOMER, `/api/owner/*` OWNER, `/api/rider/*` RIDER, `/api/admin/*` ADMIN. `/api/auth/*`는 API마다 다르다.
-- 사장 경로의 `{storeId}`는 로그인한 사장의 삭제되지 않은 가게여야 한다. 아니면 403.
+- 사장 경로의 `{storeId}`는 로그인한 사장의 삭제되지 않은 가게여야 한다. 가게가 없거나 삭제됐으면 404, 다른 사장의 가게면 403.
 - 리뷰 작성 제재는 `TB_MBR_RSTR`로 확인한다. 제재 중이어도 리뷰 작성 외 기능은 그대로 쓴다.
 
 ### 요청·응답 형식
