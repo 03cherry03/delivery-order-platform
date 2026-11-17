@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:init": "node scripts/init-db.mjs",
+    "api:smoke": "node scripts/api-smoke.mjs",
     "db:check": "node scripts/db-check.mjs"
   },
   "dependencies": {
