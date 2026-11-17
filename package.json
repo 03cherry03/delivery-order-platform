@@ -6,18 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "db:init": "node scripts/init-db.mjs",
-    "docs:openapi": "node scripts/gen-openapi.mjs",
-    "api:smoke": "node scripts/api-smoke.mjs",
-    "db:check": "node scripts/db-check.mjs"
+    "lint": "eslint"
   },
   "dependencies": {
-    "better-sqlite3": "12.11.1",
     "next": "16.4.5",
     "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "swagger-ui-dist": "5.35.0"
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
