@@ -58,44 +58,80 @@ flowchart LR
 | `server/db/views.sql` | VIEW 2개. |
 | `server/db/triggers.sql` | 트리거 18개. |
 | `server/db/seed.sql` | 시연 데이터. |
-| `server/scripts/init-db.mjs` | DB 초기화 (`npm run db:init`, server 폴더). |
-| `server/scripts/db-check.mjs` | 스키마·트리거·VIEW 검사 (`npm run db:check`, server 폴더). |
-| `server/scripts/api-smoke.mjs` | 실제 HTTP로 주요 흐름 확인 (`npm run api:smoke`, server 폴더). |
-| `server/scripts/gen-openapi.mjs` | API 마크다운에서 OpenAPI 생성 (`npm run docs:openapi`, server 폴더). |
+| `server/scripts/init-db.mjs` | DB 초기화 (루트 `npm run db:init`). |
+| `server/scripts/db-check.mjs` | 스키마·트리거·VIEW 검사 (루트 `npm run db:check`). |
+| `server/scripts/api-smoke.mjs` | 실제 HTTP로 주요 흐름 확인 (루트 `npm run api:smoke`). |
+| `server/scripts/gen-openapi.mjs` | API 마크다운에서 OpenAPI 생성 (루트 `npm run docs:openapi`). |
 | `server/docs/api/` | API 계약. [공통 규칙·전체 목록](api/README.md), [인증](api/auth.md), [고객](api/customer.md), [사장](api/owner.md), [관리자](api/admin.md), [라이더](api/rider.md). |
 | `server/docs/api/openapi.json` | 생성된 OpenAPI 3 명세. 손으로 고치지 않는다. |
 | `server/src/api-docs.js` | `/api-docs` Swagger UI와 `/api-docs/openapi.json`. 정적 파일은 API 서버가 제공한다. |
 
 ## 2. 실행 방법
 
-Node.js 24를 쓴다. 두 터미널에서 각각 실행한다.
+```sh
+npm run dev:server   # 터미널 1: API :4000
+npm run dev:web      # 터미널 2: 화면 :3000
+```
 
-**터미널 1: 화면 서버 (저장소 루트)**
+Node.js 24를 쓴다. 위 명령은 모두 저장소 루트에서 실행한다.
+명령 하나가 서버 하나를 실행한다. 동시 실행 스크립트는 없으므로 터미널 두 개를 쓴다.
+`dev:server`는 Node의 `--watch`로 API를 실행한다. `dev:web`과 기존 `npm run dev`는 Next.js 화면만 실행한다.
+
+### 처음 한 번 준비
+
+저장소 루트에서 실행한다.
 
 ```sh
 node -v              # v24.x
+npm ci
+npm run setup:server
+npm run db:init
 cp .env.example .env.local
-npm ci && npm run dev
-# http://localhost:3000
 ```
 
-**터미널 2: API 서버 (저장소 루트에서 시작)**
-
-```sh
-cd server
-npm ci && npm run db:init && npm run dev
-# http://localhost:4000
-```
-
+- `npm ci`는 화면 의존성을 설치한다. `setup:server`는 `npm --prefix server ci`로 API 의존성을 설치한다.
 - `.env.local`은 위 복사 명령으로 만드는 로컬 파일이다. Git에 올리지 않는다.
 - PowerShell에서는 복사 명령으로 `Copy-Item .env.example .env.local`을 쓴다.
-- 아래 DB·API 명령은 모두 server 폴더에서 실행한다.
-- seed 없이 빈 DB가 필요하면 `npm run db:init -- --empty`를 실행한다.
+- seed 없이 빈 DB가 필요하면 루트에서 `npm run db:init -- --empty`를 실행한다.
 - `npm run db:init`은 기존 `server/delivery.db`를 지운다. API 서버를 끄고 초기화한 뒤 다시 켠다.
+
+### 운영 실행
+
+API는 루트에서 `npm run start:server`로 실행한다. API 빌드는 필요 없다.
+이 명령은 server 패키지의 시작 명령으로 위임한다.
+시작 명령은 `server/.env`를 읽고 `--production` 플래그를 전달한다.
+플래그는 코드에서 `NODE_ENV=production`을 설정한다. 환경변수로 같은 값을 지정해도 운영 모드다.
+운영 모드에서 `SESSION_SECRET`이 없으면 아래 메시지를 출력하고 종료 코드 1로 끝난다.
+
+```text
+API 서버를 시작하지 못했습니다: 운영 모드(NODE_ENV=production)에는 SESSION_SECRET 환경변수가 필요합니다.
+```
+
+먼저 긴 임의 문자열을 만든다.
+
+```sh
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+아래 세 방법 중 하나를 쓴다. 예시 문자열은 생성한 값으로 바꾼다.
+
+1. `server/.env`를 만들고 `SESSION_SECRET=<긴 임의 문자열>` 한 줄을 저장한다. 루트에서 `npm run start:server`를 실행한다. 이 파일은 Git에서 제외되며 운영 시작 명령만 읽는다.
+2. bash/zsh: `SESSION_SECRET="<긴 임의 문자열>" npm run start:server`
+3. PowerShell: `$env:SESSION_SECRET="<긴 임의 문자열>"; npm run start:server`
+
+화면은 다른 터미널에서 실행한다.
+
+```sh
+npm run build
+npm run start:web
+```
+
+server 폴더에서 API를 직접 개발 실행하려면 `cd server && npm run dev`를 쓴다.
+
 - API 문서 화면은 `http://localhost:4000/api-docs`다. 개발·운영 모두 열린다.
 - Swagger UI는 외부 인터넷 없이 동작한다. "Try it out"은 API 서버의 실제 API를 부른다.
 - A-01 로그인을 먼저 실행하면 이후 요청에 세션 쿠키가 이어진다.
-- API 마크다운을 고쳤으면 `npm run docs:openapi`로 명세를 다시 만든다.
+- API 마크다운을 고쳤으면 루트에서 `npm run docs:openapi`로 명세를 다시 만든다.
 - Windows PowerShell에서 npm 실행이 막히면 `npm.cmd`를 쓴다.
 
 ### 환경변수
@@ -104,14 +140,12 @@ npm ci && npm run db:init && npm run dev
 |---|---|---|---|
 | 루트 Next.js | `NEXT_PUBLIC_API_BASE` | `.env.example`을 `.env.local`로 복사한다. 예시 값은 `http://localhost:4000`이다. | 실제 API origin으로 설정하고 화면을 다시 빌드한다. 끝에 `/api`를 붙이지 않는다. |
 | 루트 Next.js | `NEXT_PUBLIC_USE_MOCK` | 같은 로컬 파일의 예시 값은 `false`다. | 실제 API를 쓰려면 `false`로 설정한다. |
-| server Express | `PORT` | 프로세스 환경변수. 기본 4000. | API가 받을 포트로 지정한다. |
-| server Express | `CORS_ORIGINS` | 프로세스 환경변수. 기본 `http://localhost:3000`. 여러 origin은 쉼표로 나눈다. | 실제 화면 origin을 명시한다. `*`는 서버 시작 때 거부한다. |
-| server Express | `SESSION_SECRET` | 프로세스 환경변수. 개발에서만 기본 키를 쓴다. | 충분히 긴 비밀 키가 필수다. production에서 없으면 로그인·서명 검증이 500으로 실패한다. |
-| server Express | `NODE_ENV` | 개발에서는 production으로 설정하지 않는다. | `production`을 명시한다. 세션 쿠키에 `Secure`가 붙으므로 HTTPS가 필요하다. |
+| server Express | `PORT` | 프로세스 환경변수. 기본 4000. 운영 시작에서는 `server/.env`도 읽는다. | API가 받을 포트로 지정한다. |
+| server Express | `CORS_ORIGINS` | 기본 `http://localhost:3000`. 여러 origin은 쉼표로 나눈다. | 실제 화면 origin을 명시한다. `*`는 서버 시작 때 거부한다. |
+| server Express | `SESSION_SECRET` | 프로세스 환경변수 또는 운영 시작이 읽는 `server/.env`. 개발에서만 기본 키를 쓴다. | 충분히 긴 비밀 키가 필수다. 없으면 서버가 시작하지 않고 종료 코드 1로 끝난다. |
+| server Express | `NODE_ENV` | `start:server`의 `--production`이 코드에서 `production`으로 설정한다. 환경변수로도 지정할 수 있다. | 운영 모드에서는 세션 쿠키에 `Secure`가 붙으므로 HTTPS가 필요하다. |
 
-- Express는 로컬 환경 파일을 자동으로 읽지 않는다. 터미널이나 배포 환경에서 서버 환경변수를 전달한다.
-- API는 빌드 없이 실행한다. 운영에서는 서버 환경변수를 설정한 뒤 server 폴더에서 `npm run start`를 실행한다.
-- 화면은 루트에서 `npm run build` 후 `npm run start`로 실행한다.
+- 개발 명령 `dev:server`는 `server/.env`를 읽지 않는다. 필요한 개발 설정은 프로세스 환경변수로 전달한다.
 - 서버 시간대는 한국 시간이라고 가정한다. 일시는 SQLite `datetime('now', 'localtime')`으로 기록한다.
 
 ### 시연 계정 (`npm run db:init` 후)
@@ -331,22 +365,22 @@ export const PATCH = handler(async ({ request, params }) => {
 
 4. `server/src/routes.js`에서 핸들러를 import하고 `expressRoute()`로 등록한다. 문서 ID 주석을 붙인다.
 5. 같은 깊이의 고정 경로는 `:param` 경로보다 먼저 등록한다. 예를 들어 메뉴 정렬 경로는 메뉴 ID 경로보다 앞이다.
-6. server 폴더에서 `npm run docs:openapi`를 실행한다. 생성된 명세도 변경에 포함한다.
+6. 루트에서 `npm run docs:openapi`를 실행한다. 생성된 명세도 변경에 포함한다.
 7. 중요한 흐름이면 `server/scripts/api-smoke.mjs`에 단계를 추가한다.
 8. 아래 검증을 실행한다.
 
 ## 8. 검증 방법
 
-| 실행 위치 | 명령 | 확인하는 것 |
-|---|---|---|
-| server | `npm run db:init` | DB를 schema → views → triggers → seed 순서로 다시 만든다. 기존 데이터는 지워진다. |
-| server | `npm run db:check` | 메모리 DB에서 취소 환불·라이더 IDLE·일괄 자동 취소·MOD_DTTM, VIEW, CHECK, 탈퇴 이메일 재가입을 assert로 확인한다. |
-| server | `npm run docs:openapi -- --check` | API 마크다운과 생성된 명세가 같은지 확인한다. 아래 직접 실행 명령과 같다. |
-| server | `node scripts/gen-openapi.mjs --check` | 다르면 `npm run docs:openapi`로 명세를 다시 만든다. |
-| server | `npm run api:smoke` | DB를 초기화하고 별도 Express 서버를 띄워 실제 HTTP를 호출한다. 로그인·권한·입력 오류·주문~배달~리뷰~매출·취소 환불·관리자 취소·10분 만료·재가입 8개 시나리오를 확인한다. Next.js 빌드는 필요 없다. |
-| server | `SMOKE_BASE_URL=http://localhost:4000 node scripts/api-smoke.mjs` | 이미 켜 둔 API 서버에 붙는다. DB를 초기화하지 않으므로 앞선 실행으로 데이터가 바뀌었으면 실패할 수 있다. |
-| 루트 | `npm run lint` | 화면 ESLint 검사. |
-| 루트 | `npm run build` | 화면 프로덕션 빌드. |
+아래 명령은 모두 저장소 루트에서 실행한다.
+
+| 명령 | 확인하는 것 |
+|---|---|
+| `npm run db:init` | DB를 schema → views → triggers → seed 순서로 다시 만든다. 기존 데이터는 지워진다. |
+| `npm run db:check` | 메모리 DB에서 취소 환불·라이더 IDLE·일괄 자동 취소·MOD_DTTM, VIEW, CHECK, 탈퇴 이메일 재가입을 assert로 확인한다. |
+| `npm run docs:openapi -- --check` | API 마크다운과 생성된 명세가 같은지 확인한다. 다르면 `npm run docs:openapi`로 명세를 다시 만든다. |
+| `npm run api:smoke` | DB를 초기화하고 별도 Express 서버를 띄워 실제 HTTP를 호출한다. 로그인·권한·입력 오류·주문~배달~리뷰~매출·취소 환불·관리자 취소·10분 만료·재가입 8개 시나리오를 확인한다. Next.js 빌드는 필요 없다. |
+| `npm run lint` | 화면 ESLint 검사. |
+| `npm run build` | 화면 프로덕션 빌드. |
 
 - 각 명령은 실패하면 0이 아닌 exit code를 낸다.
 
@@ -356,7 +390,7 @@ export const PATCH = handler(async ({ request, params }) => {
 - 루트에는 화면만 둔다. DB 코드와 API 핸들러를 추가하지 않는다.
 - API와 DB 코드는 모두 `server/` 안에 둔다. Next.js와 Express는 별도 프로세스로 유지한다.
 - API 계약은 `server/docs/api/`의 마크다운이다. 경로·필드·오류 코드를 바꾸면 문서를 먼저 고친다.
-- server 폴더에서 `npm run docs:openapi`를 실행한다. 생성된 명세는 손으로 고치지 않는다.
+- 루트에서 `npm run docs:openapi`를 실행한다. 생성된 명세는 손으로 고치지 않는다.
 - API를 추가하면 `server/src/routes.js`에도 문서 ID와 함께 등록한다. 고정 경로를 변수 경로보다 먼저 둔다.
 - 응답은 항상 `handler()`를 거친다. 성공 `{ success: true, data }`, 실패 `{ success: false, error: { code, message, fields? } }`.
 - 인증은 `requireRole()`로 한다. 쿠키의 역할을 믿지 않고 요청마다 `TB_MBR`을 읽는다.
@@ -369,5 +403,5 @@ export const PATCH = handler(async ({ request, params }) => {
 - 라이더 기준 좌표는 `server/src/lib/geo.js`의 `RIDER_BASE` 하나뿐이다.
 - 현재 시각은 SQL `datetime('now', 'localtime')`로 쓴다.
 - 새 npm 의존성은 꼭 필요한 경우에만 해당 패키지에 추가한다. 화면과 API의 패키지를 섞지 않는다.
-- 스키마를 바꾸면 server 폴더에서 `npm run db:init`, `npm run db:check`를 다시 실행한다.
+- 스키마를 바꾸면 루트에서 `npm run db:init`, `npm run db:check`를 다시 실행한다.
 - 루트의 `AGENTS.md`는 Next.js가 만드는 파일이다. 커밋하지 않는다.

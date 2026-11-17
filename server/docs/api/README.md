@@ -14,7 +14,13 @@
 
 ### 인증·세션
 - 로그인(A-01)하면 서버가 HMAC 서명 쿠키를 발급한다(Node `crypto`). 쿠키 이름·수명은 [auth.md](auth.md)에 있다.
-- 서명 키는 Express API 서버의 환경변수 `SESSION_SECRET`이다. server 폴더의 `npm run dev`는 개발용 기본값을 허용한다. 운영은 `NODE_ENV=production`과 비밀 키를 설정한 뒤 같은 폴더에서 `npm run start`로 실행한다. production에서 키가 없으면 로그인·서명 검증이 500으로 실패한다.
+- 서명 키는 Express API 서버의 환경변수 `SESSION_SECRET`이다. 루트의 `npm run dev:server`는 키가 없으면 개발용 기본값을 쓴다.
+- 운영은 루트에서 `npm run start:server`로 실행한다. 시작 명령의 `--production`이 코드에서 `NODE_ENV=production`을 설정한다. 환경변수로 같은 값을 줘도 운영 모드다.
+- 운영 모드에서 키가 없으면 `API 서버를 시작하지 못했습니다: 운영 모드(NODE_ENV=production)에는 SESSION_SECRET 환경변수가 필요합니다.`를 출력하고 종료 코드 1로 끝난다. 서버가 요청을 받기 전에 중단된다.
+- 키는 `server/.env`에 `SESSION_SECRET=<긴 임의 문자열>` 한 줄로 저장하거나 프로세스 환경변수로 전달한다. 파일은 Git에서 제외되며 운영 시작 명령만 읽는다.
+- bash/zsh는 `SESSION_SECRET="<긴 임의 문자열>" npm run start:server`, PowerShell은 `$env:SESSION_SECRET="<긴 임의 문자열>"; npm run start:server`를 쓴다.
+- 임의 문자열은 `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`로 만든다.
+- 운영 모드에서는 세션 쿠키에 `Secure`가 붙는다. 자세한 준비·화면 실행 방법은 [백엔드 안내](../BACKEND.md#2-실행-방법)에 있다.
 - 서버는 요청마다 쿠키 서명을 검증하고 `TB_MBR`을 다시 읽는다. `TB_MBR.MBR_STTS`가 `ACTIVE`가 아니면 401, `TB_MBR.MBR_ROLE_CD`가 경로의 역할과 다르면 403이다.
 - 경로별 역할: `/api/customer/*` CUSTOMER, `/api/owner/*` OWNER, `/api/rider/*` RIDER, `/api/admin/*` ADMIN. `/api/auth/*`는 API마다 다르다.
 - 사장 경로의 `{storeId}`는 로그인한 사장의 삭제되지 않은 가게여야 한다. 가게가 없거나 삭제됐으면 404, 다른 사장의 가게면 403.
