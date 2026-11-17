@@ -45,6 +45,8 @@
 | `scripts/db-check.mjs` | 스키마·트리거·VIEW 검사 (`npm run db:check`). |
 | `scripts/api-smoke.mjs` | 실제 HTTP로 주요 흐름 확인 (`npm run api:smoke`). |
 | `docs/api/` | API 계약 문서. [README.md](api/README.md)(공통 규칙·코드값·전체 목록), [auth.md](api/auth.md), [customer.md](api/customer.md), [owner.md](api/owner.md), [admin.md](api/admin.md), [rider.md](api/rider.md). |
+| `docs/api/openapi.json` | OpenAPI 3 명세. `docs/api/*.md`에서 `npm run docs:openapi`(`scripts/gen-openapi.mjs`)가 만든다. 손으로 고치지 않는다. |
+| `app/api-docs/` | Swagger UI 화면 `/api-docs`. 정적 파일은 npm 패키지 `swagger-ui-dist`에서 같은 주소로 내려준다(인터넷 없이 동작). |
 
 ## 2. 실행 방법
 
@@ -56,6 +58,8 @@ npm run dev          # http://localhost:3000
 ```
 
 - seed 없이 빈 DB가 필요하면 `npm run db:init -- --empty`를 실행한다.
+- API 문서 화면은 `http://localhost:3000/api-docs`다(Swagger UI, 개발·운영 모두 항상 열림). "Try it out"은 같은 주소의 실제 API를 부른다. A-01 로그인을 먼저 실행하면 브라우저가 세션 쿠키를 저장하고, 이후 호출에 쿠키가 이어진다.
+- `docs/api/*.md`를 고쳤으면 `npm run docs:openapi`로 `docs/api/openapi.json`을 다시 만들고 함께 커밋한다.
 - `npm run db:init`은 기존 `delivery.db`를 지운다. 개발 서버가 켜져 있으면 서버는 지워진 파일을 계속 쓴다. 초기화한 뒤에는 개발 서버를 다시 켠다.
 - Windows PowerShell에서 npm이 막히면 `npm.cmd`를 쓴다.
 
@@ -232,7 +236,7 @@ stateDiagram-v2
 
 ## 7. 새 API 추가·수정 방법
 
-1. 먼저 문서를 고친다. 해당 영역 문서(`docs/api/<영역>.md`)에 같은 틀(요청·응답·오류·DB 처리)로 쓰고, `docs/api/README.md`의 전체 API 목록에 한 줄 추가한다.
+1. 먼저 문서를 고친다. 해당 영역 문서(`docs/api/<영역>.md`)에 같은 틀(요청·응답·오류·DB 처리)로 쓰고, `docs/api/README.md`의 전체 API 목록에 한 줄 추가한다. 그다음 `npm run docs:openapi`로 `docs/api/openapi.json`을 다시 만든다.
 2. `app/api/<경로>/route.js`를 만든다. 경로의 `{x}`는 `[x]` 폴더다.
 3. route 모양은 아래와 같다.
 
@@ -276,6 +280,7 @@ export const PATCH = handler(async ({ request, params }) => {
 | `npm run lint` | ESLint |
 | `npm run build` | 프로덕션 빌드 |
 | `npm run api:smoke` | `delivery.db`를 초기화하고 빌드 결과로 서버(`next start -p 3210`)를 띄운 뒤 시연 계정으로 실제 HTTP를 호출한다. 로그인·권한·입력 오류·주문~배달~리뷰~매출·취소 환불·관리자 취소·10분 만료·재가입 8개 시나리오. 먼저 `npm run build`가 필요하다. |
+| `node scripts/gen-openapi.mjs --check` | 커밋된 `docs/api/openapi.json`이 `docs/api/*.md`에서 다시 만든 결과와 같은지 확인한다. 다르면 `npm run docs:openapi`를 실행한다. |
 | `SMOKE_BASE_URL=http://localhost:3000 node scripts/api-smoke.mjs` | 이미 켜 둔 개발 서버에 붙어 실행한다. DB를 초기화하지 않으므로 앞선 실행으로 데이터가 바뀌었으면 실패할 수 있다. |
 
 - 각 명령은 실패하면 0이 아닌 exit code를 낸다.
@@ -283,7 +288,7 @@ export const PATCH = handler(async ({ request, params }) => {
 ## 9. AI 에이전트용 요약
 
 지켜야 할 불변 규칙:
-- API 계약은 `docs/api/`다. 경로·필드·오류 코드를 바꾸면 문서를 먼저 고친다.
+- API 계약은 `docs/api/*.md`다. 경로·필드·오류 코드를 바꾸면 문서를 먼저 고치고 `npm run docs:openapi`를 실행한다. `docs/api/openapi.json`은 손으로 고치지 않는다.
 - 응답은 항상 `handler()`를 거친다. 성공 `{ success: true, data }`, 실패 `{ success: false, error: { code, message, fields? } }`.
 - 인증은 `requireRole()`로 한다. 쿠키의 역할을 믿지 않고 요청마다 `TB_MBR`을 읽는다.
 - 주문 상태 변경은 `lib/server/orders.js`로만 한다. 조건부 UPDATE이고, 바뀐 행이 0이면 409다.
