@@ -1,5 +1,5 @@
 // 세션: HMAC-SHA256 서명 쿠키 delivery_session (docs/api/auth.md "세션 쿠키")
-// 비밀키는 SESSION_SECRET 환경변수. 없으면 개발용 기본값을 쓴다(운영에서는 반드시 설정).
+// 비밀키는 SESSION_SECRET 환경변수. 개발 모드에서만 없을 때 개발용 기본값을 쓴다.
 import { createHmac, timingSafeEqual } from "node:crypto";
 import db from "#lib/db";
 import { fail, forbidden, notFound } from "#lib/http";
@@ -7,14 +7,14 @@ import { fail, forbidden, notFound } from "#lib/http";
 const COOKIE = "delivery_session";
 const MAX_AGE = 86400; // 24시간 고정
 const PRODUCTION = process.env.NODE_ENV === "production";
-// 개발 기본값은 production에서 쓰지 않는다. 키가 없으면 서명·검증을 모두 거부(500)해 위조 쿠키를 막는다
-const SECRET = process.env.SESSION_SECRET || (PRODUCTION ? null : "dev-only-session-secret-change-me");
+// 운영 모드에서 키가 없으면 이 모듈을 불러오는 순간 실패한다 → 서버가 시작되지 않는다(src/index.js 가 exit 1)
+if (PRODUCTION && !process.env.SESSION_SECRET) {
+  throw new Error("운영 모드(NODE_ENV=production)에는 SESSION_SECRET 환경변수가 필요합니다.");
+}
+const SECRET = process.env.SESSION_SECRET || "dev-only-session-secret-change-me";
 const SECURE = PRODUCTION ? "; Secure" : "";
 
-function sign(payload) {
-  if (!SECRET) throw new Error("SESSION_SECRET 환경변수가 없습니다 (production 필수).");
-  return createHmac("sha256", SECRET).update(payload).digest("base64url");
-}
+const sign = (payload) => createHmac("sha256", SECRET).update(payload).digest("base64url");
 
 export function sessionCookie(memberId) {
   const issuedAt = Math.floor(Date.now() / 1000);

@@ -11,7 +11,7 @@
   },
   "scripts": {
     "dev": "node --watch src/index.js",
-    "start": "node src/index.js",
+    "start": "node --env-file-if-exists=.env src/index.js --production",
     "db:init": "node scripts/init-db.mjs",
     "db:check": "node scripts/db-check.mjs",
     "docs:openapi": "node scripts/gen-openapi.mjs",
