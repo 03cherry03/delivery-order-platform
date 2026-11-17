@@ -258,6 +258,21 @@ function constraintRejections() {
     /UNIQUE constraint failed/, "second live default address for the same member must be rejected");
 }
 
+function withdrawnEmailRejoin() {
+  const email = `db-check-${randomUUID()}@example.test`;
+  const signup = () => insert("TB_MBR", {
+    MBR_EMAIL: email, MBR_PWD: "fixture-only", MBR_NM: "재가입 회원", MBR_TELNO: "010-0000-0000", MBR_ROLE_CD: "CUSTOMER",
+  });
+  const first = signup();
+  assert.throws(signup, /UNIQUE constraint failed/, "duplicate email among active members must be rejected");
+  db.prepare(`UPDATE TB_MBR SET MBR_STTS = 'WITHDRAWN', MBR_WTHDR_DTTM = ?, MBR_NM = '탈퇴회원',
+    MBR_PWD = NULL, MBR_TELNO = NULL WHERE MBR_ID = ?`).run(time, first);
+  const second = signup();
+  assert.notEqual(second, first, "same email must sign up again after withdrawal");
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM TB_MBR WHERE MBR_EMAIL = ?").get(email).n, 2,
+    "withdrawn row keeps its email for history");
+}
+
 try {
   db.pragma("foreign_keys = ON");
   for (const file of ["schema.sql", "views.sql", "triggers.sql"]) {
@@ -266,7 +281,7 @@ try {
   const seed = path.join(sqlDir, "seed.sql");
   if (existsSync(seed)) db.exec(readFileSync(seed, "utf8"));
   for (const scenario of [pointCancellation, cardCancellation, riderCancellation, multiRowCancellation,
-    modificationTimestamps, storeRatingView, doneOrderView, constraintRejections]) {
+    modificationTimestamps, storeRatingView, doneOrderView, constraintRejections, withdrawnEmailRejoin]) {
     scenario();
     console.log(`ok - ${scenario.name}`);
   }

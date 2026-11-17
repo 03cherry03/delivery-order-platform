@@ -13,7 +13,7 @@ PRAGMA foreign_keys = ON;
 -- 1 회원
 CREATE TABLE TB_MBR (
   MBR_ID         INTEGER PRIMARY KEY AUTOINCREMENT,
-  MBR_EMAIL      TEXT    NOT NULL UNIQUE,
+  MBR_EMAIL      TEXT    NOT NULL,                       -- 활성 회원 사이에서만 UNIQUE (UK_MBR_EMAIL_ACTIVE)
   MBR_PWD        TEXT,                                   -- 탈퇴 시 NULL
   MBR_NM         TEXT    NOT NULL,                       -- 탈퇴 시 '탈퇴회원'
   MBR_TELNO      TEXT,                                   -- 탈퇴 시 NULL
@@ -30,6 +30,8 @@ CREATE TABLE TB_MBR (
   CHECK (MBR_STTS = 'WITHDRAWN' OR (MBR_PWD IS NOT NULL AND MBR_TELNO IS NOT NULL)),
   CHECK (MBR_STTS = 'ACTIVE' OR (MBR_PWD IS NULL AND MBR_TELNO IS NULL))
 ) STRICT;
+-- 이메일 중복은 활성 회원끼리만 막는다. 탈퇴 회원 행은 이메일을 그대로 두고, 같은 이메일로 다시 가입할 수 있다
+CREATE UNIQUE INDEX UK_MBR_EMAIL_ACTIVE ON TB_MBR (MBR_EMAIL) WHERE MBR_STTS = 'ACTIVE';
 
 -- 2 회원주소
 CREATE TABLE TB_MBR_ADDR (
@@ -238,8 +240,11 @@ CREATE TABLE TB_ORD (
   -- 취소 상태 ⇔ 취소일시·취소주체
   CHECK ((ORD_STTS = 'CANCEL') = (ORD_CNCL_DTTM IS NOT NULL)),
   CHECK ((ORD_STTS = 'CANCEL') = (CNCL_ACTR_CD IS NOT NULL)),
-  -- 취소 사유는 취소 주문에만, ETC면 상세 필수
-  CHECK (ORD_STTS = 'CANCEL' OR (CNCL_RSN_CD IS NULL AND ORD_CNCL_RSN_CN IS NULL)),
+  -- 취소 주문 ⇔ 취소 사유 코드. 고객 직접 취소는 CUSTOMER_REQUEST, 자동 취소는 NO_RESPONSE. ETC면 상세 필수
+  CHECK ((ORD_STTS = 'CANCEL') = (CNCL_RSN_CD IS NOT NULL)),
+  CHECK (ORD_STTS = 'CANCEL' OR ORD_CNCL_RSN_CN IS NULL),
+  CHECK (CNCL_ACTR_CD IS NOT 'CUSTOMER' OR CNCL_RSN_CD = 'CUSTOMER_REQUEST'),
+  CHECK (CNCL_ACTR_CD IS NOT 'SYSTEM' OR CNCL_RSN_CD = 'NO_RESPONSE'),
   CHECK (CNCL_RSN_CD IS NOT 'ETC' OR ORD_CNCL_RSN_CN IS NOT NULL),
   -- 관리자(고객센터) 취소 ⇔ 처리 관리자·상담 메모
   CHECK ((CNCL_ACTR_CD IS 'ADMIN') = (CNCL_PRCSR_MBR_ID IS NOT NULL)),
