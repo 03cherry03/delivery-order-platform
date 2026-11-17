@@ -4,12 +4,20 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:web": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "start:web": "next start",
+    "lint": "eslint",
+    "setup:server": "npm --prefix server ci",
+    "dev:server": "npm --prefix server run dev",
+    "start:server": "npm --prefix server run start",
+    "db:init": "npm --prefix server run db:init --",
+    "db:check": "npm --prefix server run db:check",
+    "docs:openapi": "npm --prefix server run docs:openapi --",
+    "api:smoke": "npm --prefix server run api:smoke"
   },
   "dependencies": {
-    "better-sqlite3": "12.11.1",
     "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0"
