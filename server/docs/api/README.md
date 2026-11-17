@@ -1,6 +1,6 @@
 # 배달 주문 플랫폼 API
 
-고객·사장·라이더·관리자 API를 한 문서로 모았다. 원본은 고객·사장/관리자·라이더 명세서 3개다. 테이블·컬럼 이름은 `db/schema.sql`, `db/views.sql`, `db/triggers.sql`을 따른다.
+고객·사장·라이더·관리자 API를 한 문서로 모았다. 원본은 고객·사장/관리자·라이더 명세서 3개다. 테이블·컬럼 이름은 저장소 루트 기준 `server/db/schema.sql`, `server/db/views.sql`, `server/db/triggers.sql`을 따른다.
 
 | 문서 | 범위 |
 |---|---|
@@ -14,11 +14,14 @@
 
 ### 인증·세션
 - 로그인(A-01)하면 서버가 HMAC 서명 쿠키를 발급한다(Node `crypto`). 쿠키 이름·수명은 [auth.md](auth.md)에 있다.
-- 서명 키는 환경변수 `SESSION_SECRET`이다. 개발(`next dev`)에서는 키가 없으면 개발용 기본값을 쓴다. production(`next start`)에서 키가 없으면 로그인과 인증이 필요한 요청이 모두 500으로 거부된다(공개된 기본값으로 쿠키를 위조하지 못하게 함).
+- 서명 키는 Express API 서버의 환경변수 `SESSION_SECRET`이다. server 폴더의 `npm run dev`는 개발용 기본값을 허용한다. 운영은 `NODE_ENV=production`과 비밀 키를 설정한 뒤 같은 폴더에서 `npm run start`로 실행한다. production에서 키가 없으면 로그인·서명 검증이 500으로 실패한다.
 - 서버는 요청마다 쿠키 서명을 검증하고 `TB_MBR`을 다시 읽는다. `TB_MBR.MBR_STTS`가 `ACTIVE`가 아니면 401, `TB_MBR.MBR_ROLE_CD`가 경로의 역할과 다르면 403이다.
 - 경로별 역할: `/api/customer/*` CUSTOMER, `/api/owner/*` OWNER, `/api/rider/*` RIDER, `/api/admin/*` ADMIN. `/api/auth/*`는 API마다 다르다.
 - 사장 경로의 `{storeId}`는 로그인한 사장의 삭제되지 않은 가게여야 한다. 가게가 없거나 삭제됐으면 404, 다른 사장의 가게면 403.
 - 리뷰 작성 제재는 `TB_MBR_RSTR`로 확인한다. 제재 중이어도 리뷰 작성 외 기능은 그대로 쓴다.
+- 화면은 `http://localhost:3000`, API는 `http://localhost:4000`에서 별도로 실행한다. 브라우저 요청에는 `credentials: 'include'`를 준다.
+- API 서버의 `CORS_ORIGINS`에 화면 origin을 지정한다. 기본은 `http://localhost:3000`이며 `*`는 허용하지 않는다.
+- localhost의 두 포트는 같은 site라 `SameSite=Lax` 쿠키를 쓸 수 있다. 서로 다른 site 배포에는 `SameSite=None; Secure`가 필요하며 현재 구현에는 반영되어 있지 않다.
 
 ### 요청·응답 형식
 - 요청 본문은 JSON이다.
@@ -85,7 +88,7 @@ API별 오류는 각 문서의 오류 표에 있다.
 - 예약 작업이 아니다.
 - 주문을 조회하는 API(C-20, C-21, O-01, O-02, X-11, X-12 등)는 조회 전에 만료된 주문을 한 번의 UPDATE로 취소한다: `ORD_STTS = 'WAIT'`이고 `TB_ORD.ORD_DTTM`에서 10분이 지난 주문을 `CANCEL`, `CNCL_ACTR_CD = 'SYSTEM'`, `CNCL_RSN_CD = 'NO_RESPONSE'`로 바꾼다. `TRG_ORD_CANCEL`이 주문마다 실행되므로 여러 건이어도 건마다 환불된다.
 - 접수(O-03)·거절(O-04)·고객 취소(C-22)는 같은 트랜잭션 안에서 만료 여부를 먼저 확인한다. 만료면 자동 취소로 바꾸고 409 ORDER_ALREADY_PROCESSED를 돌려준다.
-- 이 처리는 서버 코드 한 곳(`lib/server/orders.js`)에 둔다.
+- 이 처리는 서버 코드 한 곳(`server/src/lib/orders.js`, 저장소 루트 기준)에 둔다.
 
 ### 수정일시와 트리거
 - 모든 UPDATE의 `MOD_DTTM`은 트리거 `TRG_<테이블>_MOD_DTTM`이 기록한다. API는 `MOD_DTTM`을 직접 넣지 않는다.
