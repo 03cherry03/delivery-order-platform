@@ -9,7 +9,7 @@
 npm run dev
 ```
 
-http://localhost:3000/rider/login 에서 아래 계정으로 로그인합니다. (비밀번호 모두 `test1234`, 로그인 화면의 버튼을 누르면 자동 입력)
+`.env.local` 없이(또는 `NEXT_PUBLIC_USE_MOCK=true`로) 실행하면 목업 모드다. http://localhost:3000/rider/login 에서 아래 계정으로 로그인합니다. (비밀번호 모두 `test1234`, 로그인 화면의 버튼을 누르면 자동 입력)
 
 | 계정 | 처음 상태 | 확인할 수 있는 것 |
 | --- | --- | --- |
@@ -28,12 +28,13 @@ http://localhost:3000/rider/login 에서 아래 계정으로 로그인합니다.
 | /rider | 배차 대기 목록, 5초마다 새로고침. 수락 전에 확인 창 | D-04, D-05 |
 | /rider/current | 현재 배달, 10초마다 새로고침. READY일 때만 [픽업 완료], DELIVERING일 때만 [배달 완료] | D-06, D-07, D-08 |
 | /rider/history | 배달 내역, 오늘 건수·배달팁 합계, 20건씩 더 보기 | D-09 |
-| /rider/me | 운송수단·활동 반경 수정(배달 중엔 막힘), 로그아웃 | D-02, D-03, A-02 |
+| /rider/me | 운송수단·활동 반경 수정(배달 중엔 막힘), 로그아웃, 회원 탈퇴(비밀번호 확인, 배달 중엔 막힘) | D-02, D-03, A-02, A-07 |
 
 오류는 명세서대로 `error.message`를 토스트로 보여 주고, `error.code`로 다음 행동을 나눕니다.
 - `ALREADY_DISPATCHED`, `ORDER_ALREADY_PROCESSED` → 목록·현재 배달을 다시 불러옴
 - `RIDER_BUSY` → 내 상태를 다시 불러옴
 - `NOT_READY`, `NOT_PICKED_UP` → 현재 배달을 다시 불러옴
+- `PASSWORD_MISMATCH`, `HAS_ACTIVE_ORDERS` → 탈퇴 창 안에 메시지 표시
 - 보고 있던 배달이 D-06에서 `null`로 바뀌면(내가 완료한 게 아니면) "주문이 취소되었다"고 알림
 - 401·403 → 로그인 화면으로
 
@@ -44,19 +45,20 @@ http://localhost:3000/rider/login 에서 아래 계정으로 로그인합니다.
 - 새 요청 중 일부는 1분쯤 뒤 다른 라이더가 가져갑니다 (목록에서 사라짐)
 - 데이터는 브라우저 localStorage(`rider-mock-db-v1`)에 저장됩니다. 처음 상태로 돌리려면 [내 정보] 아래 "목업 데이터 처음 상태로"
 
-## 백엔드 연결
+## 실제 API로 실행 (server/ Express)
 
-프로젝트 루트에 `.env.local`을 만들고 아래를 넣은 뒤 `npm run dev`를 다시 켭니다.
+루트 README 순서대로 `npm run setup:server` → `npm run db:init`을 하고, `.env.example`을 `.env.local`로 복사한 뒤 터미널 두 개에서 `npm run dev:server`, `npm run dev:web`을 켠다. `.env.local`의 `NEXT_PUBLIC_USE_MOCK=false`이면 화면 위 "목업 모드" 띠가 사라지고 `http://localhost:4000/api/...`를 부른다(세션 쿠키, `credentials: 'include'`).
 
-```
-NEXT_PUBLIC_USE_MOCK=false
-# Next.js와 다른 주소에서 백엔드가 돌면 (같은 Next.js 안의 app/api 라면 필요 없음)
-# NEXT_PUBLIC_API_BASE=http://localhost:4000
-```
+server/db/seed.sql 기준 라이더 계정 (비밀번호 test1234)
 
-- 요청은 `fetch('/api/...', { credentials: 'include' })` 로 보냅니다 (세션 쿠키)
-- D-04는 명세서 메모대로 `lat`, `lng`을 보내지 않습니다. 서버가 숭실대 좌표(37.4963, 126.9575)를 씁니다
-- 응답 모양은 명세서 그대로 `{ success, data }` / `{ success: false, error: { code, message, fields } }` 를 기대합니다
+| 계정 | 처음 상태 | 확인할 수 있는 것 |
+| --- | --- | --- |
+| rider1@test.com | 배달 중, 배차받은 주문이 조리중 | 픽업 버튼 비활성, 탈퇴 막힘 |
+| rider2@test.com | 배달 중, 조리 완료(READY) | [픽업 완료] → [배달 완료] |
+| rider3@test.com | 픽업 후 배달 중 | [배달 완료], 이후 탈퇴 가능 |
+| rider4@test.com | 배차 대기, 도보·반경 0.5km | 반경을 넓혀 배차 대기 목록 확인·수락 |
+
+D-04는 명세서 메모대로 `lat`, `lng`을 보내지 않는다. 서버가 숭실대 좌표(37.4963, 126.9575)를 쓴다.
 
 ## 파일
 
