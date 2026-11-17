@@ -13,7 +13,7 @@
 | 미접수 만료 | 주문을 조회하는 D-02·D-04·D-06·D-09는 조회 전에 `TB_ORD.ORD_STTS='WAIT'`이고 `TB_ORD.ORD_DTTM + 10분`이 지난 주문을 SYSTEM 취소. `TB_ORD.ORD_STTS='CANCEL'`, `TB_ORD.ORD_CNCL_DTTM=현재 일시`, `TB_ORD.CNCL_ACTR_CD='SYSTEM'`, `TB_ORD.CNCL_RSN_CD='NO_RESPONSE'` 기록. 예약 작업 없음 |
 | 취소 연쇄 처리 | `TB_ORD.ORD_STTS='CANCEL'` UPDATE → `TRG_ORD_CANCEL`이 결제 취소·POINT 결제 포인트 환불과 REFUND 거래·배차된 미완료 라이더 IDLE 처리를 수행. API가 중복 수행하지 않음 |
 | 수정 일시 | UPDATE의 `MOD_DTTM`은 해당 `TRG_*_MOD_DTTM`이 기록. API가 직접 지정하지 않음 |
-| 공통 API | 로그인 A-01, 로그아웃 A-02, 회원 정보 조회·수정 A-03, 탈퇴 A-07은 공통 인증 문서 참조 |
+| 공통 API | 로그인 A-01, 로그아웃 A-02, 회원 정보 조회 A-03, 탈퇴 A-07, 이름·연락처·비밀번호 수정 A-08(`PATCH /api/auth/me`)은 공통 인증 문서 `auth.md` 참조 |
 
 ### 배달 흐름과 취소 화면
 
@@ -124,7 +124,7 @@
 
 - method/path: `PATCH /api/rider/me`
 - 권한: RIDER
-- 설명: 대기 중 운송수단·활동 반경에서 보낸 필드만 수정한다. 이름·연락처·비밀번호는 A-03을 사용한다.
+- 설명: 대기 중 운송수단·활동 반경에서 보낸 필드만 수정한다. 이름·연락처·비밀번호는 A-08(`PATCH /api/auth/me`, `auth.md`)을 사용한다.
 
 ### 요청
 

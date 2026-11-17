@@ -136,7 +136,8 @@ T-01의 acceptRate는 주문일시 기준이고 취소 주문도 세므로 `V_DO
 | A-05 | 가게 추가 등록 | POST | /api/owner/stores | OWNER | TB_MBR, TB_STORE, TB_STORE_APRV | TB_STORE, TB_STORE_APRV, TB_STORE_HOURS |
 | A-05 | 가게 재신청 | PUT | /api/owner/stores/{storeId}/application | OWNER | TB_MBR, TB_STORE, TB_STORE_APRV | TB_STORE, TB_STORE_APRV, TB_STORE_HOURS |
 | A-06 | 회원가입(CUSTOMER·OWNER) | POST | /api/auth/signup | 누구나 | TB_MBR, TB_STORE(OWNER) | TB_MBR, TB_STORE·TB_STORE_APRV·TB_STORE_HOURS(OWNER) |
-| A-07 | 회원 탈퇴 | DELETE | /api/auth/me | CUSTOMER, OWNER, RIDER | TB_MBR, TB_STORE, TB_ORD, TB_DLVR, TB_PAY | TB_MBR, TB_MBR_ADDR, TB_PNT_TXN, TB_CART, TB_CART_DTL, TB_CART_DTL_OPT; TB_ORD·TB_PAY·TB_RIDER(만료 자동 취소); TB_STORE 후처리 미정 |
+| A-07 | 회원 탈퇴 | DELETE | /api/auth/me | CUSTOMER, OWNER, RIDER | TB_MBR, TB_STORE, TB_ORD, TB_DLVR, TB_PAY | TB_MBR, TB_MBR_ADDR, TB_PNT_TXN, TB_CART, TB_CART_DTL, TB_CART_DTL_OPT, TB_STORE(OWNER); TB_ORD·TB_PAY·TB_RIDER(만료 자동 취소) |
+| A-08 | 내 정보 수정 | PATCH | /api/auth/me | 로그인한 ACTIVE 회원(모든 역할) | TB_MBR | TB_MBR |
 | C-01 | 배달 주소 목록 조회 | GET | /api/customer/addresses | CUSTOMER | TB_MBR, TB_MBR_ADDR | 없음 |
 | C-02 | 배달 주소 등록 | POST | /api/customer/addresses | CUSTOMER | TB_MBR, TB_MBR_ADDR | TB_MBR_ADDR |
 | C-03 | 배달 주소 수정 | PATCH | /api/customer/addresses/{addressId} | CUSTOMER | TB_MBR, TB_MBR_ADDR | TB_MBR_ADDR |
@@ -144,8 +145,8 @@ T-01의 acceptRate는 주문일시 기준이고 취소 주문도 세므로 `V_DO
 | C-05 | 기본 배달 주소 지정 | PATCH | /api/customer/addresses/{addressId}/default | CUSTOMER | TB_MBR, TB_MBR_ADDR | TB_MBR_ADDR |
 | C-06 | 포인트 잔액·내역 조회 | GET | /api/customer/points | CUSTOMER | TB_MBR, TB_PNT_TXN | 없음 |
 | C-07 | 포인트 충전(가상 결제) | POST | /api/customer/points/charges | CUSTOMER | TB_MBR, TB_PNT_TXN | TB_MBR, TB_PNT_TXN |
-| C-08 | 가게 목록·검색 | GET | /api/customer/stores | CUSTOMER | TB_MBR, TB_MBR_ADDR, TB_STORE, TB_STORE_HOURS, TB_ORD, TB_RVW (V_STORE_RATING) | 없음 |
-| C-09 | 고객 가게 상세 조회 | GET | /api/customer/stores/{storeId} | CUSTOMER | TB_MBR, TB_MBR_ADDR, TB_STORE, TB_STORE_HOURS, TB_ORD, TB_RVW (V_STORE_RATING) | 없음 |
+| C-08 | 가게 목록·검색 | GET | /api/customer/stores | CUSTOMER | TB_MBR, TB_MBR_ADDR, TB_STORE, TB_STORE_HOURS, TB_MENU_CTGR, TB_MENU, TB_ORD, TB_RVW (V_STORE_RATING) | 없음 |
+| C-09 | 고객 가게 상세 조회 | GET | /api/customer/stores/{storeId} | CUSTOMER | TB_MBR, TB_MBR_ADDR, TB_STORE, TB_STORE_HOURS, TB_MENU_CTGR, TB_MENU, TB_ORD, TB_RVW (V_STORE_RATING) | 없음 |
 | C-10 | 가게 메뉴 목록 | GET | /api/customer/stores/{storeId}/menus | CUSTOMER | TB_MBR, TB_STORE, TB_MENU_CTGR, TB_MENU, TB_MENU_OPT_GRP | 없음 |
 | C-11 | 메뉴 상세·옵션 조회 | GET | /api/customer/stores/{storeId}/menus/{menuId} | CUSTOMER | TB_MBR, TB_STORE, TB_MENU_CTGR, TB_MENU, TB_MENU_OPT_GRP, TB_MENU_OPT | 없음 |
 | C-12 | 가게 공개 리뷰 목록 | GET | /api/customer/stores/{storeId}/reviews | CUSTOMER | TB_MBR, TB_STORE, TB_ORD, TB_ORD_DTL, TB_RVW, TB_RVW_REPLY (V_STORE_RATING) | 없음 |
@@ -172,7 +173,7 @@ T-01의 acceptRate는 주문일시 기준이고 취소 주문도 세므로 `V_DO
 | M-03 | 메뉴 등록 | POST | /api/owner/stores/{storeId}/menus | OWNER | TB_MBR, TB_STORE, TB_MENU_CTGR, TB_MENU | TB_MENU |
 | M-04 | 메뉴 수정 | PATCH | /api/owner/stores/{storeId}/menus/{menuId} | OWNER | TB_MBR, TB_STORE, TB_MENU_CTGR, TB_MENU, TB_MENU_OPT_GRP, TB_MENU_OPT | TB_MENU |
 | M-05 | 메뉴 삭제 | DELETE | /api/owner/stores/{storeId}/menus/{menuId} | OWNER | TB_MBR, TB_STORE, TB_MENU, TB_MENU_OPT_GRP, TB_MENU_OPT | TB_MENU, TB_MENU_OPT_GRP, TB_MENU_OPT |
-| M-06 | 판매 상태 변경 | PATCH | /api/owner/stores/{storeId}/menus/{menuId}/sale-status | OWNER | TB_MBR, TB_STORE, TB_MENU | TB_MENU (자동 PAUSED 여부 미정) |
+| M-06 | 판매 상태 변경 | PATCH | /api/owner/stores/{storeId}/menus/{menuId}/sale-status | OWNER | TB_MBR, TB_STORE, TB_MENU | TB_MENU |
 | M-07 | 옵션 그룹 등록 | POST | /api/owner/stores/{storeId}/menus/{menuId}/option-groups | OWNER | TB_MBR, TB_STORE, TB_MENU, TB_MENU_OPT_GRP | TB_MENU_OPT_GRP, TB_MENU_OPT |
 | M-08 | 옵션 그룹 수정 | PATCH | /api/owner/stores/{storeId}/option-groups/{groupId} | OWNER | TB_MBR, TB_STORE, TB_MENU, TB_MENU_OPT_GRP, TB_MENU_OPT | TB_MENU_OPT_GRP |
 | M-09 | 옵션 그룹 삭제 | DELETE | /api/owner/stores/{storeId}/option-groups/{groupId} | OWNER | TB_MBR, TB_STORE, TB_MENU, TB_MENU_OPT_GRP, TB_MENU_OPT | TB_MENU_OPT_GRP, TB_MENU_OPT |
@@ -223,20 +224,20 @@ T-01의 acceptRate는 주문일시 기준이고 취소 주문도 세므로 `V_DO
 | D-08 | 배달 완료 | POST | /api/rider/deliveries/{deliveryId}/complete | RIDER | TB_MBR, TB_DLVR, TB_ORD, TB_RIDER | TB_ORD, TB_DLVR, TB_RIDER |
 | D-09 | 배달 내역 | GET | /api/rider/deliveries/history | RIDER | TB_MBR, TB_DLVR, TB_ORD, TB_STORE | TB_ORD, TB_PAY, TB_MBR, TB_PNT_TXN, TB_RIDER |
 
-
 ## 원본 명세서 대비 변경
 
-원본 명세서 3개(고객, 사장·관리자, 라이더)와 다른 점이다. 공통 규칙의 결정(응답 형식, 10분 자동 취소, 취소·환불, 탈퇴 회원 재가입 등)은 위 공통 규칙에 있다.
+원본 명세서 3개(고객, 사장·관리자, 라이더)와 다른 점이다. 공통 규칙의 결정(응답 형식, 10분 자동 취소, 취소·환불, 탈퇴 회원 재가입 등)은 위 공통 규칙에 있다. 2단계 질문 8개는 팀 결정으로 확정했고, 각 영역의 변경 목록에 들어 있다.
 
 ### 인증 (auth.md)
 
 - A-01: ACTIVE 회원만 조회하도록 결정 16 반영, HMAC-SHA256 서명 쿠키·발급/만료 검증 명시, 성공 시 `TB_MBR.MBR_LOGIN_DTTM` 갱신과 수정 시각 트리거 책임 명시. 쿠키의 사소한 선택값은 `delivery_session`, HttpOnly, SameSite=Lax, Path=/, 운영 HTTPS Secure, 24시간 고정(`Max-Age=86400`), 호스트 전용으로 정했다. 비밀번호는 계획의 Node crypto.scrypt 해시를 따른다.
 - A-02: 원본 `{success:true}`를 통일 응답 `{success:true,data:null}`로 보완. 현재 브라우저 쿠키만 만료하며 무상태 서명 쿠키에 서버측 개별 폐기 기능이 없음을 명시.
-- A-03: 원본대로 GET·`memberId/name/role` 세 필드만 반환. 라이더 D-03의 ‘공통 내 정보 수정(A-03)’ 안내와 조회 전용 정의의 충돌을 질문으로 남김.
+- A-03: 원본대로 GET·`memberId/name/role` 세 필드만 반환. 라이더 D-03 원문의 ‘공통 내 정보 수정(A-03)’ 안내는 새 A-08을 가리키도록 정정했다.
 - A-04: 원본 숫자 테이블 참조를 실명으로 변경, 가게 현재 승인 상태와 최신 반려 사유 출처 구분, CLOSED 계산을 영업시간 테이블로 정렬. 주문 조회 전 10분 WAIT 자동 취소 및 트리거 연쇄 변경을 결정 4·9에 맞게 추가.
 - A-05: 화면 함수와 일치하는 추가 POST·재신청 PUT 경로 유지. 확정 카테고리 8개·필수 좌표·영업시간 저장/교체 명시. 가게 현재 승인 상태와 새 신청 상태를 같은 트랜잭션에 PENDING으로 동기화하고 수정 시각 직접 대입 제거. 추가 201·재신청 200으로 응답 상태를 구분.
 - A-06: 고객 요약을 합쳐 CUSTOMER/OWNER 분기, OWNER의 필수 첫 가게·PENDING 입점 신청을 유지. RIDER는 D-01 교차 참조만 제공. 활성 이메일만 중복 검사하고 탈퇴 행 재활성화 없이 새 회원을 생성하도록 결정 16 반영. ADMIN 가입 금지·가입 후 자동 로그인 없음 명시. CUSTOMER가 store를 보내는 요청은 잘못된 역할별 입력으로 분류.
-- A-07: 원본 이메일 치환을 폐기하고 결정 16의 이메일 유지·이름 ‘탈퇴회원’·전화/비밀번호 NULL·WITHDRAWN 전환 반영. 양수 잔액만 EXPIRE 거래 후 0원, 잔액 0은 거래 없음, 장바구니 CASCADE 삭제 명시. OWNER는 소유 가게 진행 주문·저장값 OPEN 시 차단. RIDER는 부모 확인에 따라 D-06와 같은 ‘배달완료일시 NULL + 주문 CANCEL 아님’일 때만 차단. Q-AUTH-3은 본인 `TB_MBR_ADDR.DEL_YN='Y'` 논리 삭제를 탈퇴 트랜잭션에 포함하는 것으로 확정했다. 원문 파손으로 복원 불가한 가게 후처리만 미정으로 남김. 만료 WAIT 자동 취소와 탈퇴 변경의 트랜잭션을 구분.
+- A-07: 원본 이메일 치환을 폐기하고 결정 16의 이메일 유지·이름 ‘탈퇴회원’·전화/비밀번호 NULL·WITHDRAWN 전환 반영. 양수 잔액만 EXPIRE 거래 후 0원, 잔액 0은 거래 없음, 장바구니 CASCADE 삭제 명시. OWNER는 소유 가게 진행 주문·저장값 OPEN 시 차단. RIDER는 D-06와 같은 ‘배달완료일시 NULL + 주문 CANCEL 아님’일 때만 차단. 본인 `TB_MBR_ADDR.DEL_YN='Y'` 논리 삭제와 OWNER의 모든 비삭제 소유 가게 `TB_STORE.DEL_YN='Y'`·`TB_STORE.STORE_OPER_STTS='PAUSED'` 변경을 탈퇴 트랜잭션에 포함하는 것으로 확정했다. 만료 WAIT 자동 취소와 탈퇴 변경의 트랜잭션을 구분.
+- A-08: 사용자 확정에 따라 모든 역할의 활성 회원이 쓰는 `PATCH /api/auth/me` 신설. name·tel·newPassword 중 보낸 값만 바꾸며 이메일·역할은 유지. newPassword가 있으면 currentPassword 필수, 불일치는 기존 401 PASSWORD_MISMATCH 재사용. 응답은 A-03과 같고 수정 시각은 회원 트리거가 기록한다. 라이더 원문이 A-03으로 안내한 수정 기능은 A-08이다.
 
 ### 고객 (customer.md)
 
@@ -248,15 +249,15 @@ T-01의 acceptRate는 주문일시 기준이고 취소 주문도 세므로 `V_DO
 | C-04 | 논리 삭제·기본 주소 재지정의 트랜잭션과 주문 스냅샷 불변 명시. |
 | C-05 | 기본 주소 Y/N 오타 복구, 부분 UNIQUE에 맞춰 기존 기본 해제 후 지정. |
 | C-06 | 미확정 잔액 컬럼을 확정 TB_MBR.PNT_BAL_AMT로 대체, 거래 컬럼·페이지 응답 매핑. |
-| C-07 | 10,000원 단위 확정 반영, 1회 상한은 미정(Q). 잔액·CHARGE 동시 기록 및 수정일시 트리거 명시. |
+| C-07 | 10,000원 단위 양수 충전·1회 업무 상한 없음 확정. 충전액과 결과 잔액은 안전한 정수 범위 검사. 잔액·CHARGE 동시 기록 및 수정일시 트리거 명시. |
 | C-08 | 카테고리 8개 확정, 승인·미삭제·주소→가게 실제 직선거리 ≤3000m 필터, 영업시간 계산, V_STORE_RATING 및 리뷰 0건 후순위 명시. 원본 sort 코드와 DEFAULT 순서·시간/거리 정수화도 코디네이터 결정 반영. |
 | C-09 | minOrderAmount·reviewCount 등 OCR 교정. TB_STORE_HOURS 기반 영업시간·휴무, V_STORE_RATING 매핑. 반경 밖도 200 상세·canOrder=false로 확정. |
 | C-10 | 최종 TB_MENU_CTGR 참조·분류/메뉴 미삭제·품절 표시 조건 명시. |
 | C-11 | 손상된 path·옵션 JSON 복구, 옵션그룹·옵션 실제 컬럼 및 메뉴/가게/분류 소속 검사 명시. |
 | C-12 | 잘못된 리뷰 숨김 컬럼 표기를 TB_RVW.RVW_HDN_YN으로 교정, V_STORE_RATING 사용, 비공개 리뷰·삭제 답글 제외. |
 | C-13 | cartItemId 등 OCR 교정. 최신 가격·옵션 유효성·최소금액 계산 및 빈 장바구니 응답 명시. |
-| C-14 | INVALID_OPTION_SELECTION 오류명 OCR 복구. 장바구니 가게 일치·옵션 소속·필수/최대선택 검사와 트랜잭션 명시. 원본의 교체·합산·수량 상한 제안은 미정(Q). |
-| C-15 | cartItemId path·응답 오타 교정, 본인 소유 검사·현재 가격 계산·수정일시 트리거 명시. 수량 상한은 C-14와 함께 질문. |
+| C-14 | INVALID_OPTION_SELECTION 오류명 OCR 복구. 가게 일치·옵션 유효성·단일 트랜잭션 명시. 수량 업무 상한 없음, 안전한 정수·금액 연산 검사. replaceCart 교체와 동일 메뉴·옵션 집합 합산 확정. |
+| C-15 | cartItemId path·응답 오타 교정, 소유권·현재 가격·수정일시 트리거 명시. 수량 업무 상한 없이 1 이상·안전한 정수·금액 연산 범위 검사로 확정. |
 | C-16 | 항목 DELETE의 FK CASCADE로 옵션 삭제, 마지막 항목이면 헤더 삭제를 한 트랜잭션으로 명시. |
 | C-17 | 헤더 DELETE의 FK CASCADE로 전체 삭제, 빈 장바구니의 멱등 성공 유지. |
 | C-18 | 선택 API도 전체 틀로 포함. C-19와 같은 독립 최종 검증이 필요함을 명시하고 누락된 입력·주소·메뉴·옵션 오류를 보완. |
@@ -274,6 +275,11 @@ T-01의 acceptRate는 주문일시 기준이고 취소 주문도 세므로 `V_DO
 | C-09 | 질문 5 확정: 반경 밖 상세도 200 제공·canOrder=false, 주문은 OUT_OF_DELIVERY_RANGE. |
 | C-19 | 질문 9 확정: 0원 POINT 결제는 승인·잔액 불변·USE 생략, 현 스키마 유지. |
 | C-22 | 질문 10 확정: refunded는 결제 취소 완료를 의미하며 모든 결제수단에서 성공 시 true. |
+| C-07 | 질문 1 사용자 확정: 1회 충전 상한 없음. 양수·10,000원 단위·안전한 정수 범위만 검사. |
+| C-14·C-15 | 질문 6 사용자 확정: 항목 수량 상한 없음. 1 이상·안전한 정수·금액 연산 범위 검사. |
+| C-14 | 질문 7 사용자 확정: replaceCart=true이면 기존 장바구니 전체 삭제 후 새 가게로 교체하는 단일 트랜잭션. false·생략이면 409 CART_STORE_CONFLICT 유지. |
+| C-14 | 질문 8 사용자 확정: 메뉴와 옵션 ID 집합이 완전히 같으면 순서를 무시하고 수량 합산, 같은 메뉴라도 옵션 구성이 다르면 별도 항목. |
+| C-08·C-09·C-18·C-19 | 판매중 메뉴 0개 가게는 주문 불가. 가게 영업 상태는 유지하고 목록·상세의 canOrder=false, 미리보기·생성에서는 품절·삭제 메뉴 검사가 거부함을 명시. |
 
 ### 사장 (owner.md)
 
@@ -287,8 +293,8 @@ T-01의 acceptRate는 주문일시 기준이고 취소 주문도 세므로 `V_DO
 | M-02 | 메뉴→분류·그룹·옵션 실제 관계와 응답 필드를 복원하고 각 미삭제 행만 조회하도록 명시했다. |
 | M-03 | categoryId를 TB_MENU_CTGR.CTGR_ID에 연결하고 다른 가게·삭제된 분류는 400, 최초 ON_SALE·기본 순서 계산을 명시했다. |
 | M-04 | 같은 가게 미삭제 분류 이동 검사와 부분 수정을 명시하고 주문 스냅샷은 유지하도록 했다. |
-| M-05 | 메뉴·그룹·옵션 논리 삭제를 서버의 한 트랜잭션으로 명시했다. 마지막 판매중 메뉴 삭제 후 자동 PAUSED 여부는 질문으로 남겼다. |
-| M-06 | 판매 상태는 TB_MENU.MENU_SALE_STTS로 연결하고 성공 응답은 `{menuId, saleStatus}`로 확정했다. 마지막 메뉴 품절 시 자동 PAUSED 여부만 미정으로 유지했다. |
+| M-05 | 메뉴·그룹·옵션 논리 삭제를 서버의 한 트랜잭션으로 명시했다. 마지막 판매중 메뉴 삭제 후에도 가게 영업 상태는 유지한다. |
+| M-06 | 판매 상태는 TB_MENU.MENU_SALE_STTS로 연결하고 성공 응답은 `{menuId, saleStatus}`로 확정했다. 마지막 메뉴 품절 후에도 가게 영업 상태는 유지한다. |
 | M-07 | 그룹·초기 옵션 INSERT를 한 트랜잭션으로 명시하고 boolean required↔Y/N, maxSelect 1 이상·옵션 수보다 큰 값 허용을 반영했다. |
 | M-08 | 경로 자리표시자는 front_owner_api.js의 groupId를 사용하고 수정 필드·상위 소속·미삭제 검사를 명시했다(실제 URL 구조는 동일). |
 | M-09 | front_owner_api.js의 groupId를 사용했다. 필수 그룹 전체 삭제는 가능하고 하위 옵션 논리 삭제는 서버가 처리하도록 했다. |
@@ -314,6 +320,7 @@ T-01의 acceptRate는 주문일시 기준이고 취소 주문도 세므로 `V_DO
 | R-06 | 세션 신고자와 해당 가게 리뷰만 조회하며 처리 이력을 보존하는 배열 응답으로 복원했다. front 함수의 params 인자는 정의된 쿼리가 있다는 근거로 삼지 않았다. |
 | T-01 | 매출 합계는 V_DONE_ORDER의 배달완료일 기준, 접수율은 TB_ORD의 주문일시 기준으로 분리했다. 접수÷(접수+거절+자동 취소), OWNER·접수일시 NULL 거절, SYSTEM 자동 취소, CUSTOMER/ADMIN 취소 제외·분모 0 null을 명시했다. |
 | T-02 | V_DONE_ORDER를 상세·상세옵션과 조인하고 옵션을 상세별 선합산해 중복 집계를 막도록 명시했다. 주문 당시 메뉴명별 매출 합계가 T-01과 같아야 하며 전체 매출이 0이면 ratio=0으로 확정했다. |
+| M-05·M-06·O-04 | 사용자 확정: 판매중 메뉴가 0개가 되어도 TB_STORE.STORE_OPER_STTS는 유지하며 자동 PAUSED로 전환하지 않는다. 고객 주문 C-18·C-19의 판매 가능 메뉴 검사로 주문을 차단한다. |
 
 모든 API는 본인 미삭제 가게·OWNER 활성 세션·하위 자원 소속을 서버가 검사한다. S-01 외 미승인 가게는 409다. method/path는 front_owner_api.js와 대조했으며 URL 구조 변경은 없다. 성공·실패 봉투, 페이지 형식, 시간·금액 단위, 수정일시·취소 트리거의 책임은 계약 결정 1~17에 맞췄다.
 
@@ -333,12 +340,14 @@ T-01의 acceptRate는 주문일시 기준이고 취소 주문도 세므로 `V_DO
 - X-09·X-10: 코디네이터 결정 Q2 ①에 따라 성공 응답은 각각 `{restrictionId, memberId, startedAt, endedAt}`, `{restrictionId, endedAt}`으로 확정했다.
 - X-11: 원본 keyword 분기·최신순·최대 50건·취소 가능 상태를 유지했다. 조회 전 만료 WAIT 자동 취소와 트리거 간접 변경 테이블을 추가했다.
 - X-12: O-02 스냅샷 주문서 전체와 고객·가게·타임라인·취소 상담 정보를 명시했다. 배달 상태 컬럼 대신 일시 컬럼을 사용하고 조회 전 자동 취소를 추가했다. 코디네이터 결정 Q3 ①에 따라 관리자 취소의 cancelProcessor는 `{memberId, name}` 객체로 확정했다.
-- X-13: 허용 4개 상태의 조건부 UPDATE, ADMIN·세션 관리자·취소 사유·상담 메모를 명시했다. API의 중복 환불·가짜 배달 종료 처리를 제거하고 TRG_ORD_CANCEL 연쇄 처리로 통일했다. POINT만 포인트 환불이며, 원본 refunded=true는 취소 처리 완료 표시로 설명했다. ETC의 필수 상세 사유와 원본 요청 필드 불일치는 미정으로 남겼다.
+- X-13: 허용 4개 상태의 조건부 UPDATE, ADMIN·세션 관리자·취소 사유·상담 메모를 명시했다. API의 중복 환불·가짜 배달 종료 처리를 제거하고 TRG_ORD_CANCEL 연쇄 처리로 통일했다. POINT만 포인트 환불이며, 원본 refunded=true는 취소 처리 완료 표시로 설명했다. 사용자 결정에 따라 body에 reasonDetail(string)을 추가하여 ETC면 필수, 그 외 선택으로 확정했다. reasonDetail은 TB_ORD.ORD_CNCL_RSN_CN, counselNote는 TB_ORD.CNSL_MEMO_CN에 별도로 저장한다. 관리자 취소 폼에도 reasonDetail 필드 추가가 필요하다.
 - X-14: 원본 부분검색·역할 필터·ADMIN 제외·최대 50건을 유지했다. 주문·숨김 리뷰의 독립 집계와 활성 제한 계산을 명시했다. 코디네이터 결정 Q5 ①에 따라 ACTIVE·WITHDRAWN 회원 모두 검색하도록 확정했다.
 
 모든 method/path는 front_admin_api.js의 X-00~X-14 호출과 일치한다. 모든 API의 읽는 테이블에는 요청별 인증용 TB_MBR를 포함했다. 수정일시는 API 직접 대입 대신 해당 트리거가 기록한다.
 
 ### 라이더 (rider.md)
+
+- 공통·D-03: 이름·연락처·비밀번호 수정 안내를 조회 API인 A-03 대신 새 공통 수정 API A-08(`PATCH /api/auth/me`, `auth.md`)로 변경.
 
 - D-01: 확정 스키마의 운송수단 4개·반경 500~5000(기본 3000)·IDLE 초기값과 회원·라이더 원자적 생성을 명시. 결정 16에 따라 이메일 중복은 ACTIVE 회원만 검사하고 탈퇴 이메일 재사용을 허용.
 - D-02: 현재 배달 번호 판정에 실제 `TB_ORD` 조인과 미완료·비취소 조건을 명시. 조회 전 미접수 만료 취소와 트리거 연쇄 쓰기까지 DB 처리에 반영.
@@ -350,44 +359,3 @@ T-01의 acceptRate는 주문일시 기준이고 취소 주문도 세므로 `V_DO
 - D-08: DELIVERING 조건부 전이·완료 일시·라이더 IDLE을 API가 같은 트랜잭션에서 처리한다고 명시. 재완료도 ORDER_ALREADY_PROCESSED이며 완료 시 IDLE 처리 트리거는 없음을 명시.
 - D-09: 페이지 목록과 별개의 오늘 전체 DONE 배달 건수·팁 합계를 필수 응답으로 보존. 취소 배달 제외·한국 날짜 기준·0 기본값과 조회 전 미접수 만료 취소를 명시.
 - D-05·D-06·D-07: 고객 연락처는 해당 배달에 배차된 라이더에게만 실제 `TB_MBR.MBR_TELNO`를 제공하고 탈퇴 고객은 null로 확정하여 원본 응답 계약을 유지.
-
-## 미정 항목
-
-아래 항목은 팀 결정이 필요하다. 각 문서에 `미정(Q)`로 표시했다.
-
-### 인증
-
-1. **Q-AUTH-1 — 공통 회원정보 수정 API**: 라이더 원문 135행은 이름·연락처·비밀번호 수정을 A-03으로 안내하지만 관리자·사장 원문 236~241행과 화면 getMe는 GET 조회만 정의한다. ① 공통 수정 API를 별도 정의하고 요청·비밀번호 재확인·응답을 확정한 뒤 문서화(추천: 라이더가 안내받은 기능 보존), ② 공통 수정 기능은 제공하지 않고 라이더의 잘못된 안내를 제거. 현재 A-03은 GET만 정의했으며 임의 PATCH 규격을 추가하지 않았다.
-2. **Q-AUTH-2 — OWNER 탈퇴 후 가게 처리**: 원본 83행의 바꾸는 테이블에 가게가 있으나 `4 (�� �� ��)`로 깨져 있고 305행 본문도 복원 불가. ① 비삭제 소유 가게 모두 `TB_STORE.DEL_YN='Y'` + `TB_STORE.STORE_OPER_STTS='PAUSED'`를 탈퇴 트랜잭션에 포함(추천), ② 가게 유지. 진행 주문·저장값 OPEN 가게가 있으면 먼저 탈퇴 차단하는 규칙은 확정이다.
-
-### 고객
-
-1. **C-07 1회 충전 상한** — 단위 10,000원은 확정이다.
-   - 선택지 1: 100,000원(추천: 과제용 가상충전에 작은 상한을 명시).
-   - 선택지 2: 1,000,000원.
-   - 선택지 3: 별도 업무 상한 없음(표현 가능한 안전한 정수 범위만 검사).
-6. **C-14·C-15 항목 수량 상한**
-   - 선택지 1: 항목당 99개(추천: 입력 실수 방지, 화면에서도 동일 제한).
-   - 선택지 2: 항목당 999개.
-   - 선택지 3: 별도 업무 상한 없음(안전한 정수·금액 연산 범위는 검사).
-7. **C-14 replaceCart=true 교체 기능** — 원본에 논의 필요라고 명시되어 있다.
-   - 선택지 1: true이면 기존 장바구니 전체 삭제·새 가게 항목 생성을 한 트랜잭션으로 처리(추천: 원본 제안 수용).
-   - 선택지 2: 자동 교체 미지원, 가게 충돌은 항상 409 후 C-17 호출. 이 경우 replaceCart 필드 제거 여부도 함께 승인 필요.
-8. **C-14 동일 메뉴·옵션 구성 추가**
-   - 선택지 1: 옵션 ID 집합이 같은 항목의 수량 합산(추천: 원본 제안 수용).
-   - 선택지 2: 매 요청 별도 항목 생성.
-   - 옵션 순서는 동일 구성 판정에서 무시할 것을 추천한다. 합산 시 수량 상한도 합산 결과에 적용한다.
-
-### 사장
-
-1. **M-05·M-06: 마지막 판매중 메뉴가 사라질 때 영업 상태를 자동 PAUSED로 바꿀까?** 원본 M-05에서 백엔드 확인 항목으로 남겼고 확정 결정에는 없다. O-04의 soldOutMenuIds로 판매중 메뉴가 0개 되는 경우도 같은 정책이 필요하다.
-   - 선택 1 (**추천**): 저장 영업 상태는 유지한다. 신규 주문은 고객 주문 API의 메뉴 판매 가능 여부 검사로 차단하고 사장이 S-03으로 영업 상태를 결정한다.
-   - 선택 2: 해당 메뉴 삭제·품절 처리와 같은 트랜잭션에서 TB_STORE.STORE_OPER_STTS='PAUSED'로 바꾼다. 적용 범위는 M-05·M-06·O-04로 통일한다.
-
-### 관리자
-
-4. **X-13 ETC 상세 사유 저장**: 원본 body는 reason·counselNote뿐이나 스키마는 ETC일 때 TB_ORD.ORD_CNCL_RSN_CN이 필수다.
-   - ① `reasonDetail`을 ETC일 때 필수인 body 필드로 추가하여 ORD_CNCL_RSN_CN에 저장(추천: 상담 메모와 취소 상세 사유를 구분; 화면도 같은 필드 추가 필요).
-   - ② ETC이면 counselNote를 ORD_CNCL_RSN_CN과 CNSL_MEMO_CN에 함께 저장(현재 요청 필드 유지).
-
-

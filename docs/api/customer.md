@@ -11,7 +11,7 @@
 | 단위 | 일시 `YYYY-MM-DD HH:mm:ss` 한국 시간, 날짜 `YYYY-MM-DD`, 금액 원 단위 정수, 거리 m 정수. |
 | 거리·예상시간 표시 | distance는 실제 거리(m)를 반올림한 정수로 표시하되 3000m 판정은 반올림 전 실제 거리 사용. 예상배달시간은 조리분+실제 직선거리(km)×3을 합한 뒤 분 단위 올림. |
 | 주소·거리 | 주소와 가게의 필수 좌표로 서버에서 직선거리를 계산. 배달 가능 조건은 계산한 거리 ≤ 3000m이며 표시용 정수 변환 전 값으로 판정. |
-| 영업 | `TB_STORE.STORE_OPER_STTS='OPEN'`이면서 현재 한국 요일·시각이 `TB_STORE_HOURS.DAY_OF_WEEK`, `OPEN_TM` 이상·`CLOSE_TM` 미만인 구간에 포함되면 `isOpenNow=true`. 구간 여러 개는 브레이크타임, 행 없는 요일은 휴무. 표시 상태는 영업시간 밖 CLOSED, 시간 안 PAUSED 또는 OPEN. |
+| 영업 | `TB_STORE.STORE_OPER_STTS='OPEN'`이면서 현재 한국 요일·시각이 `TB_STORE_HOURS.DAY_OF_WEEK`, `OPEN_TM` 이상·`CLOSE_TM` 미만인 구간에 포함되면 `isOpenNow=true`. 구간 여러 개는 브레이크타임, 행 없는 요일은 휴무. 표시 상태 operStatus는 사장 S-01과 같다: 저장값 PAUSED면 PAUSED, 아니면 영업시간 안 OPEN·밖 CLOSED. |
 | 주문 상태 | WAIT → COOKING → READY(조리완료·픽업대기) → DELIVERING → DONE. CANCEL은 종료 상태. 배달 행은 사장 접수 O-03에서 생성하며 배차·픽업·완료는 `TB_DLVR.DSPCH_DTTM`, `PKUP_DTTM`, `DLVR_CMPL_DTTM`으로 판단. |
 | 미접수 만료 | 예약 작업 없음. 주문 조회 C-20·C-21은 조회 전에 `TB_ORD.ORD_DTTM + 10분`이 지난 WAIT를 SYSTEM/NO_RESPONSE로 취소. C-22는 같은 트랜잭션에서 만료 검사 후 만료면 자동 취소를 반영하고 409 ORDER_ALREADY_PROCESSED. 오류 반환 때문에 확정한 자동 취소를 롤백하지 않는다. |
 | 취소 연쇄 | `TB_ORD.ORD_STTS='CANCEL' UPDATE → TRG_ORD_CANCEL이 결제 취소·포인트 환불·라이더 IDLE 처리`. 주문당 `TB_PAY` 1건. 승인된 POINT 결제만 잔액 환불·REFUND 거래(결제금액 0원은 거래 없음); 다른 결제는 결제 상태만 CANCELED. API에서 중복 처리하지 않는다. |
@@ -229,12 +229,12 @@
 - 권한: CUSTOMER
 - 설명: 실제 결제 연동 없이 가상 승인하고 포인트를 충전한다.
 
-> 미정(Q): 1회 충전 상한 금액. 충전 단위는 10,000원으로 확정이다.
+- 1회 충전액의 업무 상한은 없다. 10,000원 단위의 양수이며 안전한 정수 범위에서 처리한다.
 
 ### 요청
 | 위치 | 필드 | 타입 | 필수 | 제약·설명 |
 |---|---|---|---|---|
-| body | amount | integer | O | 양수, 10,000원 배수. 1회 상한 미정(Q) |
+| body | amount | integer | O | 양수·10,000원 배수·안전한 정수 범위. 별도 1회 상한 없음 |
 | body | method | string | O | CARD, KAKAO, NAVER. POINT 불가 |
 
 ### 응답
@@ -249,14 +249,14 @@
 ### 오류
 | HTTP | code | 발생 조건 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | 양의 정수·10,000원 배수 아님, 결제수단 오류, 상한 확정 후 상한 초과 |
+| 400 | VALIDATION_ERROR | 양의 정수·10,000원 배수 아님, 결제수단 오류, 충전액 또는 충전 후 잔액이 안전한 정수 범위를 벗어남 |
 | 401 | UNAUTHORIZED | 세션 없음·만료·비활성 회원 |
 | 403 | FORBIDDEN | CUSTOMER 아님 |
 
 ### DB 처리
 - 읽는 테이블: `TB_MBR`, `TB_PNT_TXN` / 바꾸는 테이블: `TB_MBR`, `TB_PNT_TXN`.
 - 트랜잭션: `TB_MBR.PNT_BAL_AMT` 증가와 거래 후 잔액을 담은 CHARGE 거래 INSERT 전체.
-- 서버 검사: 충전액·수단 확인. 충전 거래의 `TB_PNT_TXN.CHRG_MTHD_CD` 지정, `ORD_ID`는 NULL.
+- 서버 검사: 충전액·수단 확인, 충전액과 충전 후 잔액이 안전한 정수 범위인지 확인. 충전 거래의 `TB_PNT_TXN.CHRG_MTHD_CD` 지정, `ORD_ID`는 NULL.
 - 상태 변경 / VIEW·트리거: 거래 COMPLETED. `TRG_MBR_MOD_DTTM`이 회원 수정일시 기록.
 
 ## C-08 가게 목록·검색
@@ -288,7 +288,7 @@
 | items[].minOrderAmount / deliveryTip | integer / integer | `TB_STORE.MIN_ORD_AMT` / `DLVR_TIP_AMT` |
 | items[].estimatedDeliveryMinutes | integer | `TB_STORE.COOK_EST_MI + 실제 거리(km) × 3`을 합한 뒤 분 단위 올림 |
 | items[].avgRating / reviewCount | number 또는 null / integer | `V_STORE_RATING.AVG_RTNG` / `RVW_CNT` |
-| items[].canOrder | boolean | 승인·미삭제·배달반경 충족 상태에서 isOpenNow. 장바구니 최소금액 검사는 주문 시 수행 |
+| items[].canOrder | boolean | 승인·미삭제·배달반경·영업 충족 및 미삭제 분류에 속한 미삭제 ON_SALE 메뉴가 1개 이상. 장바구니 최소금액 검사는 주문 시 수행 |
 
 ### 오류
 | HTTP | code | 발생 조건 |
@@ -299,9 +299,9 @@
 | 404 | NOT_FOUND | 주소 없음·삭제됨 |
 
 ### DB 처리
-- 읽는 테이블: `TB_MBR`, `TB_MBR_ADDR`, `TB_STORE`, `TB_STORE_HOURS`, `TB_ORD`, `TB_RVW` / 바꾸는 테이블: 없음.
+- 읽는 테이블: `TB_MBR`, `TB_MBR_ADDR`, `TB_STORE`, `TB_STORE_HOURS`, `TB_MENU_CTGR`, `TB_MENU`, `TB_ORD`, `TB_RVW` / 바꾸는 테이블: 없음.
 - 트랜잭션: 없음.
-- 서버 검사: 주소 소유권, `TB_STORE.STORE_APRV_STTS='APPROVED'`, `DEL_YN='N'`, 서버 계산 거리 ≤ 3000m. 미영업 가게도 조회하되 canOrder=false.
+- 서버 검사: 주소 소유권, `TB_STORE.STORE_APRV_STTS='APPROVED'`, `DEL_YN='N'`, 서버 계산 거리 ≤ 3000m. 미영업 또는 미삭제 분류의 미삭제 ON_SALE 메뉴가 0개인 가게도 조회하되 canOrder=false. 판매 메뉴 유무로 가게 영업 상태는 변경하지 않는다.
 - 상태 변경 / VIEW·트리거: `V_STORE_RATING` 조인. 모든 정렬은 영업중 우선. DEFAULT는 실제 거리 오름차순, RATING은 `AVG_RTNG IS NULL` 뒤·평점 내림차순, REVIEW-COUNT는 리뷰 수 내림차순, DELIVERY_TIP은 배달팁 오름차순. 각 정렬의 동률은 가게 ID 오름차순.
 
 ## C-09 고객 가게 상세 조회
@@ -327,7 +327,7 @@
 | telNo / address / description | string / string / string 또는 null | `TB_STORE.STORE_TELNO` / `STORE_ADDR` / `STORE_CN` |
 | hours[].dayOfWeek / open / close | integer / string / string | `TB_STORE_HOURS.DAY_OF_WEEK`(0 일~6 토) / `OPEN_TM` / `CLOSE_TM` |
 | closedDays | integer[] | 0~6 중 영업시간 행 없는 요일 |
-| operStatus / isOpenNow / canOrder | string / boolean / boolean | 공통 영업 계산 / 영업 여부 / 영업·반경 충족 여부 |
+| operStatus / isOpenNow / canOrder | string / boolean / boolean | 공통 영업 계산 / 영업 여부 / 영업·반경 충족 및 미삭제 분류의 미삭제 ON_SALE 메뉴 1개 이상 |
 | distance | integer | 주소 좌표와 가게 좌표의 실제 직선거리(m)를 반올림 |
 | minOrderAmount / deliveryTip / cookMinutes | integer / integer / integer | `TB_STORE.MIN_ORD_AMT` / `DLVR_TIP_AMT` / `COOK_EST_MI` |
 | estimatedDeliveryMinutes | integer | 기본 조리분 + 실제 거리(km) × 3을 합한 뒤 분 단위 올림 |
@@ -342,9 +342,9 @@
 | 404 | NOT_FOUND | 주소 없음·삭제됨 또는 가게 없음·삭제·미승인 |
 
 ### DB 처리
-- 읽는 테이블: `TB_MBR`, `TB_MBR_ADDR`, `TB_STORE`, `TB_STORE_HOURS`, `TB_ORD`, `TB_RVW` / 바꾸는 테이블: 없음.
+- 읽는 테이블: `TB_MBR`, `TB_MBR_ADDR`, `TB_STORE`, `TB_STORE_HOURS`, `TB_MENU_CTGR`, `TB_MENU`, `TB_ORD`, `TB_RVW` / 바꾸는 테이블: 없음.
 - 트랜잭션: 없음.
-- 서버 검사: 주소 소유권·미삭제, 가게 승인·미삭제. 조회 가능 여부와 별개로 영업 외·반경 밖은 canOrder=false.
+- 서버 검사: 주소 소유권·미삭제, 가게 승인·미삭제. 조회 가능 여부와 별개로 영업 외·반경 밖 또는 미삭제 분류의 미삭제 ON_SALE 메뉴가 0개이면 canOrder=false. 판매 메뉴가 없어도 가게 영업 상태는 그대로 유지한다.
 - 상태 변경 / VIEW·트리거: `V_STORE_RATING`으로 공개 평점·리뷰 수 조회. 영업 상태는 저장값과 영업시간으로 계산.
 
 ## C-10 가게 메뉴 목록
@@ -501,15 +501,15 @@
 - 권한: CUSTOMER
 - 설명: 판매 가능한 메뉴·옵션을 본인 장바구니에 담는다.
 
-> 미정(Q): 수량 상한, replaceCart=true의 교체 기능 확정, 동일 메뉴·동일 옵션 구성의 수량 합산 여부. 원본 제안 필드는 유지하되 확정 기능으로 간주하지 않는다.
+- 수량의 별도 업무 상한은 없다. 같은 메뉴와 옵션 ID 집합이 완전히 같으면 옵션 순서와 관계없이 수량을 합산하고, 같은 메뉴라도 옵션 구성이 다르면 별도 항목으로 저장한다.
 
 ### 요청
 | 위치 | 필드 | 타입 | 필수 | 제약·설명 |
 |---|---|---|---|---|
 | body | storeId / menuId | integer | O | 가게 / 메뉴 ID |
-| body | quantity | integer | O | 1 이상, 상한 미정(Q) |
+| body | quantity | integer | O | 1 이상·안전한 정수 범위. 별도 상한 없음, 합산 수량·금액 연산도 안전한 정수 범위여야 함 |
 | body | optionIds | integer[] | O | 선택 옵션, 미선택은 [], 중복 선택 불가 |
-| body | replaceCart | boolean | X | 기본 false. true의 교체 동작 미정(Q) |
+| body | replaceCart | boolean | X | 기본 false. true면 다른 가게의 기존 장바구니 전체 삭제 후 새 가게로 교체 |
 
 ### 응답
 ```json
@@ -522,32 +522,32 @@
 ### 오류
 | HTTP | code | 발생 조건 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | ID·수량·옵션 배열·타입 오류 |
+| 400 | VALIDATION_ERROR | ID·수량·옵션 배열·타입 오류 또는 수량 합산·금액 연산이 안전한 정수 범위를 벗어남 |
 | 401 | UNAUTHORIZED | 세션 없음·만료·비활성 회원 |
 | 403 | FORBIDDEN | CUSTOMER 아님 |
 | 404 | NOT_FOUND | 가게·메뉴·분류·옵션 없음·삭제됨 또는 가게 미승인 |
 | 409 | MENU_UNAVAILABLE | 품절 등 담기 불가 |
 | 409 | INVALID_OPTION_SELECTION | 필수그룹 누락, 그룹별 최대 선택 수 초과, 타 메뉴 옵션 |
-| 409 | CART_STORE_CONFLICT | 다른 가게 장바구니가 있고 replaceCart=false |
+| 409 | CART_STORE_CONFLICT | 다른 가게 장바구니가 있고 replaceCart=false 또는 생략 |
 
 ### DB 처리
 - 읽는 테이블: `TB_MBR`, `TB_STORE`, `TB_MENU_CTGR`, `TB_MENU`, `TB_MENU_OPT_GRP`, `TB_MENU_OPT`, `TB_CART`, `TB_CART_DTL`, `TB_CART_DTL_OPT` / 바꾸는 테이블: `TB_CART`, `TB_CART_DTL`, `TB_CART_DTL_OPT`.
-- 트랜잭션: 가게 일치 검사·필요한 장바구니 생성·항목·옵션 INSERT 전체. 교체 기능을 채택하면 기존 헤더 삭제와 재생성도 동일 범위.
-- 서버 검사: 회원당 장바구니 1개, 가게와 메뉴·분류 일치, 판매·삭제 상태, 옵션이 해당 메뉴 소속인지, 필수그룹당 최소 1개 및 `TB_MENU_OPT_GRP.MAX_SLCT_CNT` 이하인지 검사.
-- 상태 변경 / VIEW·트리거: 교체 시 헤더 삭제는 FK CASCADE로 기존 항목·옵션 삭제. 합산 채택 시 `TRG_CART_DTL_MOD_DTTM`이 항목 수정일시 기록.
+- 트랜잭션: 가게 일치 검사·필요한 장바구니 생성·항목·옵션 INSERT 또는 수량 합산 전체. replaceCart=true의 기존 장바구니 전체 삭제와 새 가게 장바구니 생성도 동일 범위.
+- 서버 검사: 회원당 장바구니 1개, 가게와 메뉴·분류 일치, 판매·삭제 상태, 옵션이 해당 메뉴 소속인지, 필수그룹당 최소 1개 및 `TB_MENU_OPT_GRP.MAX_SLCT_CNT` 이하인지 검사. 메뉴 ID와 옵션 ID 집합이 같으면 옵션 순서를 무시하고 기존 항목에 합산하며, 옵션 구성이 다르면 별도 항목 생성. 입력·합산 수량과 금액 연산이 안전한 정수 범위인지 확인.
+- 상태 변경 / VIEW·트리거: 교체 시 헤더 삭제는 FK CASCADE로 기존 항목·옵션 삭제. 합산 UPDATE 시 `TRG_CART_DTL_MOD_DTTM`이 항목 수정일시 기록.
 
 ## C-15 장바구니 수량 변경
 - method/path: `PATCH /api/customer/cart/items/{cartItemId}`
 - 권한: CUSTOMER
 - 설명: 본인 항목 수량을 변경하고 최신 가격으로 항목 합계를 반환한다.
 
-> 미정(Q): 수량 상한은 C-14와 함께 확정한다.
+- 항목 수량의 별도 업무 상한은 없다. 1 이상이며 안전한 정수·금액 연산 범위를 검사한다.
 
 ### 요청
 | 위치 | 필드 | 타입 | 필수 | 제약·설명 |
 |---|---|---|---|---|
 | path | cartItemId | integer | O | 장바구니 항목 ID |
-| body | quantity | integer | O | 1 이상, 0은 허용하지 않음. 상한 미정(Q), 삭제는 C-16 |
+| body | quantity | integer | O | 1 이상·안전한 정수 범위, 별도 상한 없음. 0은 허용하지 않으며 삭제는 C-16 |
 
 ### 응답
 ```json
@@ -561,7 +561,7 @@
 ### 오류
 | HTTP | code | 발생 조건 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | ID·수량 오류 또는 수량 0 이하 |
+| 400 | VALIDATION_ERROR | ID·수량 오류, 수량 0 이하 또는 수량·금액 연산이 안전한 정수 범위를 벗어남 |
 | 401 | UNAUTHORIZED | 세션 없음·만료·비활성 회원 |
 | 403 | FORBIDDEN | 타인 항목 또는 CUSTOMER 아님 |
 | 404 | NOT_FOUND | 항목 없음·삭제됨 |
@@ -569,7 +569,7 @@
 ### DB 처리
 - 읽는 테이블: `TB_MBR`, `TB_CART`, `TB_CART_DTL`, `TB_CART_DTL_OPT`, `TB_MENU`, `TB_MENU_OPT` / 바꾸는 테이블: `TB_CART_DTL`.
 - 트랜잭션: 소유권 확인·수량 UPDATE·최신 금액 계산.
-- 서버 검사: 항목→장바구니→회원 소유권, 양의 정수 수량. 주문 직전 판매·옵션 검증은 C-19가 별도로 재수행.
+- 서버 검사: 항목→장바구니→회원 소유권, 1 이상 정수 수량, 수량·금액 연산의 안전한 정수 범위. 주문 직전 판매·옵션 검증은 C-19가 별도로 재수행.
 - 상태 변경 / VIEW·트리거: `TRG_CART_DTL_MOD_DTTM`이 기록. 과거 주문 값 변경 없음.
 
 ## C-16 장바구니 항목 삭제
@@ -664,7 +664,7 @@
 ### 오류
 | HTTP | code | 발생 조건 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | 주소 ID·결제수단 오류 |
+| 400 | VALIDATION_ERROR | 주소 ID·결제수단 오류 또는 수량·금액 연산이 안전한 정수 범위를 벗어남 |
 | 401 | UNAUTHORIZED | 세션 없음·만료·비활성 회원 |
 | 403 | FORBIDDEN | 타인 주소 또는 CUSTOMER 아님 |
 | 404 | NOT_FOUND | 주소·가게 없음·삭제됨 |
@@ -680,7 +680,7 @@
 ### DB 처리
 - 읽는 테이블: `TB_MBR`, `TB_MBR_ADDR`, `TB_STORE`, `TB_STORE_HOURS`, `TB_MENU_CTGR`, `TB_MENU`, `TB_MENU_OPT_GRP`, `TB_MENU_OPT`, `TB_CART`, `TB_CART_DTL`, `TB_CART_DTL_OPT` / 바꾸는 테이블: 없음.
 - 트랜잭션: 없음. 미리보기 결과는 가격·재고·잔액을 예약하지 않는다.
-- 서버 검사: 주소·장바구니 본인 소유, 가게 승인·미삭제·실제 영업·3000m, 장바구니 가게 일치, 메뉴·옵션 소속·판매·삭제·필수·최대선택, 최신 금액·최소금액·POINT 잔액.
+- 서버 검사: 주소·장바구니 본인 소유, 가게 승인·미삭제·실제 영업·3000m, 장바구니 가게 일치, 메뉴·옵션 소속·판매·삭제·필수·최대선택, 최신 금액·최소금액·POINT 잔액 및 수량·금액 연산의 안전한 정수 범위. 품절·삭제 메뉴 또는 삭제 분류에 속한 메뉴를 포함하면 MENU_UNAVAILABLE로 거부하므로 판매중 메뉴가 0개인 가게의 주문도 불가하다(빈 장바구니는 EMPTY_CART). 가게 영업 상태는 바꾸지 않는다.
 - 상태 변경 / VIEW·트리거: 없음.
 
 ## C-19 주문 생성·가상 결제
@@ -712,7 +712,7 @@
 ### 오류
 | HTTP | code | 발생 조건 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | 필수값·타입·결제수단·요청사항 길이 오류 |
+| 400 | VALIDATION_ERROR | 필수값·타입·결제수단·요청사항 길이 오류 또는 수량·금액 연산이 안전한 정수 범위를 벗어남 |
 | 401 | UNAUTHORIZED | 세션 없음·만료·비활성 회원 |
 | 403 | FORBIDDEN | 타인 주소 또는 CUSTOMER 아님 |
 | 404 | NOT_FOUND | 주소·가게 없음·삭제됨 |
@@ -728,7 +728,7 @@
 ### DB 처리
 - 읽는 테이블: `TB_MBR`, `TB_MBR_ADDR`, `TB_STORE`, `TB_STORE_HOURS`, `TB_MENU_CTGR`, `TB_MENU`, `TB_MENU_OPT_GRP`, `TB_MENU_OPT`, `TB_CART`, `TB_CART_DTL`, `TB_CART_DTL_OPT` / 바꾸는 테이블: `TB_ORD`, `TB_ORD_DTL`, `TB_ORD_DTL_OPT`, `TB_PAY`, `TB_MBR`(POINT), `TB_PNT_TXN`(POINT), `TB_CART`, `TB_CART_DTL`, `TB_CART_DTL_OPT`.
 - 트랜잭션: 모든 검증 → 주문・상세・옵션 스냅샷 → 결제 → POINT 차감·USE → 장바구니 삭제를 하나로 처리. 중간 실패는 전체 롤백.
-- 서버 검사: C-18과 같은 소유권·가게 일치·승인·미삭제·영업시간·거리·메뉴·옵션·최소금액 검사를 독립적으로 재수행. 클라이언트 금액은 받지 않으며 `(TB_MENU.MENU_AMT + 선택 TB_MENU_OPT.OPT_AMT 합) × TB_CART_DTL.CART_QTY`로 계산.
+- 서버 검사: C-18과 같은 소유권·가게 일치·승인·미삭제·영업시간·거리·메뉴·옵션·최소금액 및 수량·금액 연산의 안전한 정수 범위를 독립적으로 재검사. 품절·삭제 메뉴 또는 삭제 분류 메뉴가 포함되면 MENU_UNAVAILABLE로 거부하므로 판매중 메뉴가 0개인 가게는 주문할 수 없다(빈 장바구니는 EMPTY_CART). 가게 영업 상태는 바꾸지 않는다. 클라이언트 금액은 받지 않으며 `(TB_MENU.MENU_AMT + 선택 TB_MENU_OPT.OPT_AMT 합) × TB_CART_DTL.CART_QTY`로 계산.
 - 상태 변경 / VIEW·트리거:
   1. `TB_ORD.ORD_STTS='WAIT'`. 요청을 `STORE_RQST_CN`, `RIDER_RQST_CN`, `CUTLERY_YN`에 저장. 주소의 `TB_MBR_ADDR.MBR_ADDR`, `MBR_DADDR`, `MBR_LAT`, `MBR_LNG`를 `TB_ORD.DLVR_ADDR`, `DLVR_DADDR`, `DLVR_LAT`, `DLVR_LNG`에 복사. 배달팁도 주문 시점 값 저장.
   2. `TB_ORD_DTL.ORD_DTL_SEQ`, `MENU_ID`, `ORD_MENU_NM`, `ORD_QTY`, `ORD_UPRC`와 `TB_ORD_DTL_OPT.OPT_ID`, `ORD_OPT_GRP_NM`, `ORD_OPT_NM`, `ORD_OPT_AMT` 저장. 단가는 옵션 제외이며 그룹명까지 반드시 스냅샷으로 보존.

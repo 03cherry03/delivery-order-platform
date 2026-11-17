@@ -511,9 +511,8 @@ X-00은 관리자 메인 화면과 메뉴 배지에 사용하는 **관리자 요
 | path | orderId | integer | 예 | 주문 ID |
 | body | reason | string | 예 | CUSTOMER_REQUEST, STORE_ISSUE, DELIVERY_FAIL, ETC |
 | body | counselNote | string | 예 | 공백만 불가, 최대 300자; 상담 내용 `TB_ORD.CNSL_MEMO_CN` |
-| body | reasonDetail | string | 미정(Q) | ETC일 때 필요한 `TB_ORD.ORD_CNCL_RSN_CN`을 위한 추가 필드 제안; 질문 4 |
+| body | reasonDetail | string | ETC일 때 예 | ETC면 공백만 불가, 그 외 선택; `TB_ORD.ORD_CNCL_RSN_CN`에 저장, 생략 시 null |
 
-> 미정(Q): 원본 요청에는 reason·counselNote만 있지만 ETC는 스키마상 상세 사유가 필수다. reasonDetail 추가 또는 상담 메모 재사용 중 확정해야 한다(질문 4). ETC 외 세 사유는 이 결정과 무관하게 처리할 수 있다.
 
 ### 응답
 ```json
@@ -527,7 +526,7 @@ X-00은 관리자 메인 화면과 메뉴 배지에 사용하는 **관리자 요
 ### 오류
 | HTTP | code | 발생 조건 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | ID·reason·counselNote 오류; ETC 상세 사유 처리 방식은 질문 4 |
+| 400 | VALIDATION_ERROR | ID·reason·counselNote·reasonDetail 형식 오류 또는 ETC인데 reasonDetail 누락·공백 |
 | 401 | UNAUTHORIZED | 세션 없음·만료·비활성 회원 |
 | 403 | FORBIDDEN | ADMIN 아님 |
 | 404 | NOT_FOUND | 주문 없음 |
@@ -537,7 +536,7 @@ X-00은 관리자 메인 화면과 메뉴 배지에 사용하는 **관리자 요
 - 읽는 테이블: `TB_MBR`, `TB_ORD`, `TB_PAY`, `TB_DLVR` / 바꾸는 테이블: `TB_ORD`; 트리거로 `TB_PAY`, `TB_MBR`, `TB_PNT_TXN`, `TB_RIDER`. `TB_DLVR` 행은 유지한다.
 - 트랜잭션: 주문 확인 → 허용 상태 조건부 UPDATE → 취소 트리거 연쇄 변경을 하나로 처리한다.
 - 서버 검사: `WHERE ORD_ID=? AND ORD_STTS IN ('WAIT','COOKING','READY','DELIVERING')`의 변경 행 수를 확인한다. 조회 시 canCancel=true였어도 동시 배달완료·취소로 0행이면 409. 처리자는 요청에서 받지 않고 세션의 ADMIN 회원을 사용한다.
-- 상태 변경 / VIEW·트리거: `TB_ORD.ORD_STTS='CANCEL'`, `TB_ORD.ORD_CNCL_DTTM`=현재, `TB_ORD.CNCL_ACTR_CD='ADMIN'`, `TB_ORD.CNCL_PRCSR_MBR_ID`=로그인 관리자, `TB_ORD.CNCL_RSN_CD`=reason, `TB_ORD.CNSL_MEMO_CN`=counselNote, ETC 상세 사유는 질문 4에 따른다. `ORD_STTS='CANCEL' UPDATE → TRG_ORD_CANCEL이 결제 취소·포인트 환불·라이더 IDLE 처리`. API가 중복 환불하거나 배달완료일시를 만들지 않는다. `TB_PAY.ORD_ID`는 UNIQUE로 주문당 결제 1건이며, 승인된 POINT 결제만 잔액 환불 및 양수 금액의 REFUND 거래를 생성하고 그 밖의 수단은 결제 상태만 CANCELED로 바꾼다. `TRG_ORD_MOD_DTTM` 등 수정일시 트리거가 동작한다. 관리자 취소는 매출·수락률 집계에서 제외한다.
+- 상태 변경 / VIEW·트리거: `TB_ORD.ORD_STTS='CANCEL'`, `TB_ORD.ORD_CNCL_DTTM`=현재, `TB_ORD.CNCL_ACTR_CD='ADMIN'`, `TB_ORD.CNCL_PRCSR_MBR_ID`=로그인 관리자, `TB_ORD.CNCL_RSN_CD`=reason, `TB_ORD.CNSL_MEMO_CN`=counselNote, `TB_ORD.ORD_CNCL_RSN_CN`=reasonDetail(생략 시 null). `ORD_STTS='CANCEL' UPDATE → TRG_ORD_CANCEL이 결제 취소·포인트 환불·라이더 IDLE 처리`. API가 중복 환불하거나 배달완료일시를 만들지 않는다. `TB_PAY.ORD_ID`는 UNIQUE로 주문당 결제 1건이며, 승인된 POINT 결제만 잔액 환불 및 양수 금액의 REFUND 거래를 생성하고 그 밖의 수단은 결제 상태만 CANCELED로 바꾼다. `TRG_ORD_MOD_DTTM` 등 수정일시 트리거가 동작한다. 관리자 취소는 매출·수락률 집계에서 제외한다.
 
 ## X-14 회원 검색
 - method/path: `GET /api/admin/members`

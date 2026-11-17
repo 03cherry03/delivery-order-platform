@@ -135,7 +135,7 @@ HTTP 200.
 - 서버 검사: 쿠키 발급 당시 값이 아닌 현재 활성 회원 정보 반환.
 - 상태 변경 / VIEW·트리거: 없음. 조회로 최종 로그인 시각을 갱신하지 않는다.
 
-> 미정(Q): **Q-AUTH-1** — 라이더 원문의 D-03은 이름·연락처·비밀번호 수정을 A-03으로 안내하지만, A-03 본문과 화면 함수에는 GET 조회만 있다. 공통 회원정보 수정 API의 존재·method/path·요청 규격은 확인이 필요하며 이 문서는 GET만 정의한다.
+이름·연락처·비밀번호 수정은 A-08을 사용한다. 라이더 원문의 ‘A-03 내 정보 수정’ 안내도 A-08을 가리킨다.
 
 ## A-04 내 가게 목록
 
@@ -337,14 +337,60 @@ HTTP 200. 세션 쿠키 삭제.
 
 ### DB 처리
 
-- 읽는 테이블: `TB_MBR`, `TB_STORE`, `TB_ORD`, `TB_DLVR`, `TB_PAY` / 바꾸는 테이블(확정): `TB_MBR`, `TB_MBR_ADDR`, `TB_PNT_TXN`, `TB_CART` 및 CASCADE로 `TB_CART_DTL`, `TB_CART_DTL_OPT`. 만료 자동 취소 시 `TB_ORD`, `TB_PAY`, `TB_MBR`, `TB_PNT_TXN`, `TB_RIDER` 추가. `TB_STORE` 후처리는 아래 질문 참조.
-- 트랜잭션: 주문 검사 전 만료 WAIT 자동 취소를 처리한다. 탈퇴 변경은 활성 상태·비밀번호·진행 업무 재확인부터 포인트 소멸 거래, 회원 개인정보 변경, 회원주소 논리 삭제, 장바구니 삭제까지 한 트랜잭션이며 실패 시 전체 롤백한다. 성공 커밋 후 쿠키 삭제.
+- 읽는 테이블: `TB_MBR`, `TB_STORE`, `TB_ORD`, `TB_DLVR`, `TB_PAY` / 바꾸는 테이블: `TB_MBR`, `TB_MBR_ADDR`, `TB_PNT_TXN`, `TB_CART` 및 CASCADE로 `TB_CART_DTL`, `TB_CART_DTL_OPT`, OWNER는 `TB_STORE` 추가. 만료 자동 취소 시 `TB_ORD`, `TB_PAY`, `TB_MBR`, `TB_PNT_TXN`, `TB_RIDER` 추가.
+- 트랜잭션: 주문 검사 전 만료 WAIT 자동 취소를 처리한다. 탈퇴 변경은 활성 상태·비밀번호·진행 업무 재확인부터 포인트 소멸 거래, 회원 개인정보 변경, 회원주소 논리 삭제, 장바구니 삭제, OWNER 소유 가게 논리 삭제·일시정지까지 한 트랜잭션이며 실패 시 전체 롤백한다. 성공 커밋 후 쿠키 삭제.
 - 서버 검사: CUSTOMER는 `TB_ORD.MBR_ID`가 세션 회원인 진행 주문, OWNER는 `TB_STORE.OWNR_MBR_ID`가 세션 회원인 가게의 진행 주문을 검사한다. OWNER는 비삭제 소유 가게의 저장 영업 상태도 검사한다. RIDER는 `TB_DLVR.RIDER_MBR_ID`가 세션 회원이고 `TB_DLVR.DLVR_CMPL_DTTM IS NULL`이며 연결 주문의 `TB_ORD.ORD_STTS<>'CANCEL'`인 배달이 있으면 차단한다(D-06과 동일). 취소된 배달은 차단하지 않는다. 탈퇴를 위해 배달을 임의 취소·완료하거나 라이더를 IDLE로 바꾸지는 않는다.
 - 상태 변경 / VIEW·트리거:
   1. `TB_MBR.MBR_STTS='WITHDRAWN'`, `TB_MBR.MBR_WTHDR_DTTM=현재 시각`, `TB_MBR.MBR_NM='탈퇴회원'`, `TB_MBR.MBR_PWD=NULL`, `TB_MBR.MBR_TELNO=NULL`로 한 UPDATE에 기록한다. `TB_MBR.MBR_EMAIL`은 그대로 유지한다.
   2. 기존 잔액이 양수일 때만 `TB_PNT_TXN`에 회원 식별자, `TB_PNT_TXN.PNT_TXN_TYPE_CD='EXPIRE'`, `TB_PNT_TXN.PNT_TXN_AMT=기존 잔액`, `TB_PNT_TXN.PNT_BAL_AMT=0`, `TB_PNT_TXN.PNT_TXN_STTS='COMPLETED'`, 거래일시 현재 시각, 주문 식별자·충전수단 NULL로 INSERT하고 회원 잔액을 0으로 만든다. 잔액 0이면 거래를 만들지 않는다.
   3. 본인 주소(`TB_MBR_ADDR.MBR_ID`가 세션 회원)의 `TB_MBR_ADDR.DEL_YN='Y'`로 논리 삭제한다. 본인의 `TB_CART` 행을 DELETE한다. `TB_CART_DTL`, `TB_CART_DTL_OPT`는 외래키 CASCADE로 삭제되므로 별도 중복 DELETE하지 않는다.
-  4. 회원·주소 수정 시각은 각각 `TRG_MBR_MOD_DTTM`, `TRG_MBR_ADDR_MOD_DTTM`이 기록한다. 만료 WAIT 취소는 A-04와 동일하게 주문 CANCEL UPDATE → `TRG_ORD_CANCEL` 연쇄 처리이며 API는 결제 취소·환불·라이더 IDLE을 중복 수행하지 않는다. VIEW 사용 없음.
+  4. OWNER는 `TB_STORE.OWNR_MBR_ID`가 세션 회원이고 `TB_STORE.DEL_YN='N'`인 모든 소유 가게를 `TB_STORE.DEL_YN='Y'`, `TB_STORE.STORE_OPER_STTS='PAUSED'`로 함께 UPDATE한다. 기존 승인 이력·주문 이력은 보존한다.
+  5. 회원·주소·가게 수정 시각은 각각 `TRG_MBR_MOD_DTTM`, `TRG_MBR_ADDR_MOD_DTTM`, `TRG_STORE_MOD_DTTM`이 기록한다. 만료 WAIT 취소는 A-04와 동일하게 주문 CANCEL UPDATE → `TRG_ORD_CANCEL` 연쇄 처리이며 API는 결제 취소·환불·라이더 IDLE을 중복 수행하지 않는다. VIEW 사용 없음.
 
-> 미정(Q): **Q-AUTH-2** — OWNER 탈퇴 시 진행 주문·OPEN 가게 차단 이후 가게 후처리는 원문이 깨져 있다. 원본 83행의 변경 테이블 목록에는 가게가 포함되지만 처리 내용은 읽을 수 없다. ① 비삭제 소유 가게 모두 `TB_STORE.DEL_YN='Y'` + `TB_STORE.STORE_OPER_STTS='PAUSED'`(추천), ② 가게 유지 중 확인이 필요하다.
 
+
+## A-08 내 정보 수정
+
+- method/path: `PATCH /api/auth/me`
+- 권한: 로그인한 ACTIVE 회원(CUSTOMER, OWNER, RIDER, ADMIN)
+- 설명: 보낸 필드만 변경한다. 이메일·역할은 수정할 수 없다. 비밀번호 변경에만 현재 비밀번호를 재확인한다.
+
+### 요청
+
+| 위치 | 필드 | 타입 | 필수 | 제약·설명 |
+|---|---|---|---|---|
+| body | name | string | X | 비어 있지 않은 이름, 최대 50자. `TB_MBR.MBR_NM` |
+| body | tel | string | X | `010-0000-0000` 형식. `TB_MBR.MBR_TELNO` |
+| body | newPassword | string | X | 8자 이상. 솔트 포함 scrypt 해시로 `TB_MBR.MBR_PWD`에 저장 |
+| body | currentPassword | string | 조건부 O | newPassword가 있으면 필수. 기존 `TB_MBR.MBR_PWD` 해시와 검증 |
+
+name, tel, newPassword 중 적어도 하나를 보낸다. 생략한 필드는 유지하며 NULL은 허용하지 않는다. 이메일·역할 변경 필드는 허용하지 않는다.
+
+### 응답
+
+HTTP 200. A-03과 같은 형태로 변경 후 정보를 반환한다.
+
+```json
+{ "success": true, "data": { "memberId": 7, "name": "김새이름", "role": "CUSTOMER" } }
+```
+
+| 필드 | 타입 | 설명 (출처 컬럼 또는 계산식) |
+|---|---|---|
+| memberId | number | `TB_MBR.MBR_ID` |
+| name | string | 변경 후 `TB_MBR.MBR_NM` |
+| role | string | 변경하지 않은 `TB_MBR.MBR_ROLE_CD` |
+
+### 오류
+
+| HTTP | code | 발생 조건 |
+|---|---|---|
+| 400 | VALIDATION_ERROR | 변경 필드 없음, 타입·이름 길이·전화번호 형식·새 비밀번호 길이 오류, newPassword가 있으나 currentPassword 누락, 이메일·역할 변경 시도 |
+| 401 | UNAUTHORIZED | 세션 없음·변조·만료 또는 회원이 비활성 |
+| 401 | PASSWORD_MISMATCH | newPassword 변경 시 currentPassword가 기존 비밀번호와 불일치 |
+
+### DB 처리
+
+- 읽는 테이블: `TB_MBR` / 바꾸는 테이블: `TB_MBR`.
+- 트랜잭션: 현재 활성 회원·입력값 확인, 필요한 경우 현재 비밀번호 검증, 보낸 필드 UPDATE, 변경 후 정보 조회까지 하나의 트랜잭션. 오류 시 전체 롤백.
+- 서버 검사: 세션 회원 본인만 수정한다. newPassword가 없으면 현재 비밀번호 검증 없이 이름·전화번호만 변경할 수 있다. 이메일·역할은 UPDATE 대상에서 제외한다.
+- 상태 변경 / VIEW·트리거: 이름·전화번호와 새 비밀번호의 scrypt 해시 중 전달된 값만 저장한다. `TB_MBR.MBR_LOGIN_DTTM`은 변경하지 않는다. 수정 시각은 `TRG_MBR_MOD_DTTM`이 기록하며 API가 직접 넣지 않는다. VIEW 사용 없음.
