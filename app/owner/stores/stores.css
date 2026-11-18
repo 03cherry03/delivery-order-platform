@@ -1,0 +1,17 @@
+.ow-stores-stores-wrap { max-width: 560px; margin: 0 auto; padding: var(--s8) var(--s4); }
+.ow-stores-stores-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s6); }
+.ow-stores-stores-head h1 { margin-top: 4px; }
+.ow-stores-stores-notice { background: var(--orange-tint); color: #bb4500; padding: 12px 14px; border-radius: var(--r-md); font-size: 14px; margin-bottom: var(--s4); }
+.ow-stores-stores-list { display: flex; flex-direction: column; gap: var(--s3); }
+.ow-stores-stores-item { display: flex; align-items: center; gap: var(--s3); background: var(--bg-surface); border-radius: var(--r-lg); padding: var(--s5); }
+.ow-stores-stores-clickable { transition: background var(--dur) var(--ease-out); }
+.ow-stores-stores-clickable:hover { background: var(--bg-subtle); }
+.ow-stores-stores-itemMain { flex: 1; min-width: 0; }
+.ow-stores-stores-itemTop { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.ow-stores-stores-name { font-size: 17px; font-weight: 800; margin-right: 4px; }
+.ow-stores-stores-reject { font-size: 13px; color: var(--red); margin-top: 6px; }
+.ow-stores-stores-itemSide { display: flex; align-items: center; gap: var(--s2); flex: none; }
+.ow-stores-stores-waiting { background: var(--orange); color: #fff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: var(--r-pill); }
+.ow-stores-stores-arrow { font-size: 22px; color: var(--fg-4); }
+.ow-stores-stores-bottom { margin-top: var(--s6); display: flex; flex-direction: column; align-items: center; gap: var(--s5); }
+.ow-stores-stores-bottom > a:first-child { width: 100%; }

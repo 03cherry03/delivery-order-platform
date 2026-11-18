@@ -1,0 +1,27 @@
+// sales.css 의 클래스 이름 (CSS Modules 대신 쓰는 이름표)
+const s = {
+  'axis': 'ow-storeId-sales-sales-axis',
+  'bar': 'ow-storeId-sales-sales-bar',
+  'barCol': 'ow-storeId-sales-sales-barCol',
+  'barOn': 'ow-storeId-sales-sales-barOn',
+  'bars': 'ow-storeId-sales-sales-bars',
+  'chart': 'ow-storeId-sales-sales-chart',
+  'custom': 'ow-storeId-sales-sales-custom',
+  'error': 'ow-storeId-sales-sales-error',
+  'filters': 'ow-storeId-sales-sales-filters',
+  'head': 'ow-storeId-sales-sales-head',
+  'kpi': 'ow-storeId-sales-sales-kpi',
+  'kpiLabel': 'ow-storeId-sales-sales-kpiLabel',
+  'kpiStrong': 'ow-storeId-sales-sales-kpiStrong',
+  'kpiValue': 'ow-storeId-sales-sales-kpiValue',
+  'kpis': 'ow-storeId-sales-sales-kpis',
+  'page': 'ow-storeId-sales-sales-page',
+  'r': 'ow-storeId-sales-sales-r',
+  'ratio': 'ow-storeId-sales-sales-ratio',
+  'ratioBar': 'ow-storeId-sales-sales-ratioBar',
+  'ratioCol': 'ow-storeId-sales-sales-ratioCol',
+  'table': 'ow-storeId-sales-sales-table',
+  'tick': 'ow-storeId-sales-sales-tick',
+  'tooltip': 'ow-storeId-sales-sales-tooltip',
+};
+export default s;

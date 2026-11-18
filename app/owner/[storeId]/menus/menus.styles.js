@@ -1,0 +1,27 @@
+// menus.css 의 클래스 이름 (CSS Modules 대신 쓰는 이름표)
+const s = {
+  'cat': 'ow-storeId-menus-menus-cat',
+  'catAdd': 'ow-storeId-menus-menus-catAdd',
+  'catCount': 'ow-storeId-menus-menus-catCount',
+  'catHead': 'ow-storeId-menus-menus-catHead',
+  'catItem': 'ow-storeId-menus-menus-catItem',
+  'catItemName': 'ow-storeId-menus-menus-catItemName',
+  'catList': 'ow-storeId-menus-menus-catList',
+  'desc': 'ow-storeId-menus-menus-desc',
+  'head': 'ow-storeId-menus-menus-head',
+  'headActions': 'ow-storeId-menus-menus-headActions',
+  'menuName': 'ow-storeId-menus-menus-menuName',
+  'menuPrice': 'ow-storeId-menus-menus-menuPrice',
+  'none': 'ow-storeId-menus-menus-none',
+  'order': 'ow-storeId-menus-menus-order',
+  'page': 'ow-storeId-menus-menus-page',
+  'row': 'ow-storeId-menus-menus-row',
+  'rowActions': 'ow-storeId-menus-menus-rowActions',
+  'rowMain': 'ow-storeId-menus-menus-rowMain',
+  'rowTop': 'ow-storeId-menus-menus-rowTop',
+  'sale': 'ow-storeId-menus-menus-sale',
+  'saveBar': 'ow-storeId-menus-menus-saveBar',
+  'saveBtns': 'ow-storeId-menus-menus-saveBtns',
+  'soldOut': 'ow-storeId-menus-menus-soldOut',
+};
+export default s;
