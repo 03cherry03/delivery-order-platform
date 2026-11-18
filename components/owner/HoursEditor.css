@@ -1,0 +1,16 @@
+.ow-c-HoursEditor-list { display: flex; flex-direction: column; gap: var(--s2); }
+.ow-c-HoursEditor-row { display: flex; gap: var(--s4); align-items: flex-start; padding: var(--s2) 0; border-bottom: 1px solid var(--border-1); }
+.ow-c-HoursEditor-day { display: flex; align-items: center; gap: var(--s3); width: 92px; flex: none; height: 44px; font-weight: 700; }
+.ow-c-HoursEditor-sun { color: var(--red); }
+.ow-c-HoursEditor-sat { color: var(--blue); }
+.ow-c-HoursEditor-ranges { display: flex; flex-direction: column; gap: var(--s2); flex: 1; align-items: flex-start; }
+.ow-c-HoursEditor-range { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.ow-c-HoursEditor-time { width: 132px; }
+.ow-c-HoursEditor-off { height: 44px; display: flex; align-items: center; color: var(--fg-3); }
+.ow-c-HoursEditor-next { font-size: 12px; font-weight: 700; color: var(--navy); background: var(--navy-tint); padding: 2px 8px; border-radius: var(--r-pill); }
+.ow-c-HoursEditor-remove { width: 32px; height: 32px; border: none; border-radius: 50%; background: var(--bg-subtle); cursor: pointer; font-size: 18px; color: var(--fg-3); }
+.ow-c-HoursEditor-remove:hover { color: var(--fg-1); }
+@media (max-width: 480px) {
+  .ow-c-HoursEditor-row { flex-direction: column; gap: var(--s2); }
+  .ow-c-HoursEditor-time { width: 118px; }
+}

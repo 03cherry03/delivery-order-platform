@@ -1,0 +1,15 @@
+.ow-storeId-menus-menuId-menu-page { display: flex; flex-direction: column; gap: var(--s4); max-width: 760px; }
+.ow-storeId-menus-menuId-menu-form { display: flex; flex-direction: column; gap: var(--s4); }
+.ow-storeId-menus-menuId-menu-formActions { display: flex; justify-content: flex-end; }
+.ow-storeId-menus-menuId-menu-groups { display: flex; flex-direction: column; gap: var(--s3); }
+.ow-storeId-menus-menuId-menu-group { background: var(--bg-subtle); border-radius: var(--r-md); padding: var(--s3) var(--s4); }
+.ow-storeId-menus-menuId-menu-groupHead { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); margin-bottom: var(--s2); flex-wrap: wrap; }
+.ow-storeId-menus-menuId-menu-groupTitle { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.ow-storeId-menus-menuId-menu-optRow { display: flex; align-items: center; gap: var(--s2); padding: 6px 0; border-top: 1px solid var(--border-1); }
+.ow-storeId-menus-menuId-menu-optRow:first-of-type { border-top: none; }
+.ow-storeId-menus-menuId-menu-optName { flex: 1; font-weight: 600; }
+.ow-storeId-menus-menuId-menu-priceInput { width: 120px; flex: none; }
+.ow-storeId-menus-menuId-menu-addRow { border-top: 1px dashed var(--border-2); margin-top: 4px; padding-top: var(--s2); }
+.ow-storeId-menus-menuId-menu-addRow .input { background: var(--bg-surface); }
+.ow-storeId-menus-menuId-menu-newOpts { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.ow-storeId-menus-menuId-menu-newOpts .ow-storeId-menus-menuId-menu-optRow { width: 100%; border-top: none; padding: 0; }
