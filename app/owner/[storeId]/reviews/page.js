@@ -19,11 +19,11 @@ export default function ReviewsPage() {
   const [tab, setTab] = useState('reviews');
   const [noReply, setNoReply] = useState(false);
   const [page, setPage] = useState(1);
-  const [reportPage, setReportPage] = useState(1);
   const [reportTarget, setReportTarget] = useState(null);
 
   const { data, reload } = useLoad(() => getReviews(storeId, { noReply: noReply || undefined, page, size: 10 }), [storeId, noReply, page]);
-  const { data: reports, reload: reloadReports } = useLoad(() => (tab === 'reports' ? getMyReports(storeId, { page: reportPage, size: 20 }) : null), [storeId, tab, reportPage]);
+  // R-06은 페이지 없이 배열로 온다 (백엔드 문서 server/docs/api/owner.md)
+  const { data: reports, reload: reloadReports } = useLoad(() => (tab === 'reports' ? getMyReports(storeId) : null), [storeId, tab]);
 
   const after = () => { reload(); reloadStore(); };
 
@@ -74,9 +74,9 @@ export default function ReviewsPage() {
       {tab === 'reports' && (
         <>
           {!reports && <Loading />}
-          {reports && reports.items.length === 0 && <Empty>신고한 리뷰가 없어요</Empty>}
+          {reports && reports.length === 0 && <Empty>신고한 리뷰가 없어요</Empty>}
           <div className={s.list}>
-            {reports?.items.map((p) => (
+            {reports?.map((p) => (
               <div key={p.reportId} className={s.card}>
                 <div className={s.cardTop}>
                   <Badge tone={REPORT_STATUS[p.status].tone}>{REPORT_STATUS[p.status].label}</Badge>
@@ -89,12 +89,6 @@ export default function ReviewsPage() {
               </div>
             ))}
           </div>
-          {reports && reports.totalCount > reports.size && (
-            <div className={s.pager}>
-              <Button variant="text" size="sm" disabled={reportPage <= 1} onClick={() => setReportPage(reportPage - 1)}>‹ 이전</Button>
-              <Button variant="text" size="sm" disabled={reportPage * reports.size >= reports.totalCount} onClick={() => setReportPage(reportPage + 1)}>다음 ›</Button>
-            </div>
-          )}
         </>
       )}
 

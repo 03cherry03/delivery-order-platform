@@ -23,7 +23,7 @@ const TABS = [
   { value: 'DONE', label: '완료' },
   { value: 'CANCEL', label: '취소' },
 ];
-const PAGED = (t) => t === 'DONE' || t === 'CANCEL';
+const DATED = (t) => t === 'DONE' || t === 'CANCEL'; // 완료·취소 탭은 날짜로 조회 (O-01은 페이지 없이 배열)
 
 export default function OrdersPage() {
   const { storeId, store, reloadStore } = useStore();
@@ -31,7 +31,6 @@ export default function OrdersPage() {
   const now = useNow();
   const [tab, setTab] = useState('WAIT');
   const [date, setDate] = useState(() => toDate(new Date()));
-  const [page, setPage] = useState(1);
   const [picked, setSelectedId] = useState(null); // 사장이 고른 주문
   const [modal, setModal] = useState(null); // 'accept' | 'reject' | 'cancel'
 
@@ -47,11 +46,11 @@ export default function OrdersPage() {
 
   // 현재 탭 목록 (진행 중 탭만 5초 폴링)
   const { data: listData, reload: reloadList } = useLoad(
-    () => getOrders(storeId, PAGED(tab) ? { status: tab, date, page, size: 20 } : { status: tab }),
-    [storeId, tab, date, page],
-    PAGED(tab) ? undefined : 5000,
+    () => getOrders(storeId, DATED(tab) ? { status: tab, date } : { status: tab }),
+    [storeId, tab, date],
+    DATED(tab) ? undefined : 5000,
   );
-  const list = Array.isArray(listData) ? listData : listData?.items;
+  const list = listData;
 
   // 고른 주문이 목록에 없으면(처음, 처리 후 사라짐) 맨 위 주문을 보여준다
   const selectedId = list?.some((o) => o.orderId === picked) ? picked : (list?.[0]?.orderId ?? null);
@@ -87,14 +86,14 @@ export default function OrdersPage() {
     }
   }
 
-  const tabItems = TABS.map((t) => ({ ...t, count: counts && !PAGED(t.value) ? counts[t.value] : undefined }));
+  const tabItems = TABS.map((t) => ({ ...t, count: counts && !DATED(t.value) ? counts[t.value] : undefined }));
 
   return (
     <div className={s.page}>
       <div className={s.toolbar}>
-        <Tabs items={tabItems} value={tab} onChange={(v) => { setTab(v); setPage(1); setSelectedId(null); setDetail(null); }} />
-        {PAGED(tab) && (
-          <input className={`input ${s.date}`} type="date" value={date} max={toDate(new Date())} onChange={(e) => { setDate(e.target.value); setPage(1); }} aria-label="주문 날짜" />
+        <Tabs items={tabItems} value={tab} onChange={(v) => { setTab(v); setSelectedId(null); setDetail(null); }} />
+        {DATED(tab) && (
+          <input className={`input ${s.date}`} type="date" value={date} max={toDate(new Date())} onChange={(e) => { setDate(e.target.value); }} aria-label="주문 날짜" />
         )}
       </div>
 
@@ -128,13 +127,6 @@ export default function OrdersPage() {
               </button>
             );
           })}
-          {PAGED(tab) && listData && listData.totalCount > listData.size && (
-            <div className={s.pager}>
-              <Button variant="text" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>‹ 이전</Button>
-              <span className="small muted num">{page} / {Math.ceil(listData.totalCount / listData.size)}</span>
-              <Button variant="text" size="sm" disabled={page * listData.size >= listData.totalCount} onClick={() => setPage(page + 1)}>다음 ›</Button>
-            </div>
-          )}
         </section>
 
         <section className={s.detail} aria-label="주문서">

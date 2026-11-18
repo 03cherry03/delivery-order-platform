@@ -18,7 +18,9 @@ export function initialStore(from) {
     storeName: from.storeName, categoryCode: from.categoryCode, bizNo: from.bizNo, telNo: from.telNo,
     address: from.address, addressDetail: from.addressDetail || '', lat: String(from.lat), lng: String(from.lng),
     minOrderAmount: String(from.minOrderAmount), deliveryTip: String(from.deliveryTip), cookMinutes: String(from.cookMinutes),
-    description: from.description || '', week: fromServerHours(from.hours),
+    description: from.description || '',
+    // 영업시간이 하나도 없으면(예: 시연 데이터의 반려 가게) 기본 영업시간을 채워 둔다
+    week: from.hours?.length ? fromServerHours(from.hours) : emptyWeek(),
   };
 }
 
@@ -26,14 +28,16 @@ export function initialStore(from) {
 export function storeBody(v) {
   const h = toServerHours(v.week);
   if (h.error) return { error: h.error };
-  return {
-    body: {
-      storeName: v.storeName, categoryCode: v.categoryCode, bizNo: v.bizNo, telNo: v.telNo,
-      address: v.address, addressDetail: v.addressDetail || null, lat: Number(v.lat), lng: Number(v.lng),
-      minOrderAmount: Number(v.minOrderAmount), deliveryTip: Number(v.deliveryTip), cookMinutes: Number(v.cookMinutes),
-      description: v.description || null, hours: h.hours,
-    },
+  const body = {
+    storeName: v.storeName, categoryCode: v.categoryCode, bizNo: v.bizNo, telNo: v.telNo,
+    address: v.address, lat: Number(v.lat), lng: Number(v.lng),
+    minOrderAmount: Number(v.minOrderAmount), deliveryTip: Number(v.deliveryTip), cookMinutes: Number(v.cookMinutes),
+    hours: h.hours,
   };
+  // 선택 항목은 비어 있으면 아예 보내지 않는다 (API 문서: 생략 시 NULL, null을 보내면 400)
+  if (v.addressDetail.trim()) body.addressDetail = v.addressDetail;
+  if (v.description.trim()) body.description = v.description;
+  return { body };
 }
 
 export default function StoreForm({ value, onChange, errors = {} }) {
