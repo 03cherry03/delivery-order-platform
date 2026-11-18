@@ -224,4 +224,4 @@ __marimo__/
 
 *.db
 *.db-shm
-*.db-wal
+*.db-wal.env.local
