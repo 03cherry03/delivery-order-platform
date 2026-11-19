@@ -7,15 +7,11 @@ import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ROLES, getMe, homeFor, login, logout, roleOfPath, safeNext } from '@/lib/auth/session';
+import { BRAND, brandParts } from '@/lib/brand';
+
+const [BRAND_HEAD, BRAND_TAIL] = brandParts(BRAND.customer);
 
 const MOCK_ON = process.env.NEXT_PUBLIC_USE_MOCK !== 'false';
-
-const DEMO = [
-  { label: '고객', email: 'customer1@test.com' },
-  { label: '사장님', email: 'owner1@test.com' },
-  { label: '라이더', email: 'rider2@test.com' },
-  { label: '관리자', email: 'admin@test.com' },
-];
 
 const NOTICE = {
   joined: '가입이 완료됐어요. 로그인해 주세요.',
@@ -97,7 +93,7 @@ function Login() {
 
   return (
     <main className="lg-page">
-      <div className="lg-brand">동네<span>한입</span></div>
+      <div className="lg-brand">{BRAND_HEAD}<span>{BRAND_TAIL}</span></div>
 
       <section className="lg-card">
         {view === 'switch' && current ? (
@@ -142,17 +138,6 @@ function Login() {
                 <Link href="/customer?mode=signup">고객</Link>
                 <Link href="/owner/signup">사장님</Link>
                 <Link href="/rider/signup">라이더</Link>
-              </div>
-            </div>
-
-            <div className="lg-demo">
-              <p>시연용 계정 · 비밀번호 test1234</p>
-              <div className="lg-demoBtns">
-                {DEMO.map((d) => (
-                  <button key={d.email} type="button" onClick={() => { setEmail(d.email); setPassword('test1234'); setError(''); }}>
-                    {d.label}
-                  </button>
-                ))}
               </div>
             </div>
           </>

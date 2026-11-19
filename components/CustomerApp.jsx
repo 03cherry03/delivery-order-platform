@@ -2,6 +2,8 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {loginUrl} from '@/lib/auth/session';
+import {BRAND,brandParts} from '@/lib/brand';
+const [BRAND_HEAD,BRAND_TAIL]=brandParts(BRAND.customer);
 const API='/api/customer';
 const PAGE_SIZE=20; // customer.md: page >= 1, size 1~100, default 20
 const cash=n=>Number(n??0).toLocaleString('ko-KR')+'원';
@@ -264,7 +266,7 @@ await api(API+'/cart/items','POST',{
  if(!user)return <AuthForm mode={authMode} setMode={setAuthMode} busy={busy} error={error} onSubmit={data=>execute(async()=>{const mode=authMode;await api('/api/auth/'+(mode==='login'?'login':'signup'),'POST',data);if(mode==='signup'){loginQuery.current='?joined=1';setAuthMode('login');return;}const u=await api('/api/auth/me');sessionEpoch.current+=1;listGeneration.current+=1;storeListGeneration.current+=1;publicReviewGeneration.current+=1;setAddresses([]);setAddressId(null);setStores([]);setOrders([]);setOrderPage(emptyPage());setReviews([]);setReviewPage(emptyPage());setPoints(null);setUser(u);if(u.role==='CUSTOMER')await refresh();})} notice={notice}/>;
  if(user.role!=='CUSTOMER')return <Loading/>;
  return <div className="app-shell">
-  <header className="top-header"><div className="header-inner"><button className="brand" onClick={()=>reloadTab('home')}>동네<span>한입</span><small>음식배달</small></button>
+  <header className="top-header"><div className="header-inner"><button className="brand" onClick={()=>reloadTab('home')}>{BRAND_HEAD}<span>{BRAND_TAIL}</span><small>음식배달</small></button>
    <div className="address-box"><span>📍 배달 받을 주소</span><select value={addressId??''} onChange={e=>{setAddressId(Number(e.target.value));setStore(null);setMenuDetail(null);setPreview(null);setTab('home');}}><option value="" disabled>주소 선택</option>{addresses.map(a=><option key={a.addressId} value={a.addressId}>{a.addressName} · {a.address}</option>)}</select></div>
    <div className="header-actions"><button onClick={()=>reloadTab('points')}>🪙 {cash(points?.balance)}</button><button onClick={()=>reloadTab('cart')}>🛒 장바구니 {cart?.items?.length>0&&<b className="count">{cart.items.length}</b>}</button><button onClick={()=>reloadTab('profile')}>👤 {user.name}</button></div></div></header>
   <div className="app-body">
@@ -305,12 +307,12 @@ await api(API+'/cart/items','POST',{
 }
 
 function AuthForm({mode,setMode,onSubmit,notice,error,busy}){
- const [email,setEmail]=useState('customer1@test.com'),[password,setPassword]=useState('test1234'),[name,setName]=useState(''),[tel,setTel]=useState('');
- return <div className="auth-page"><div className="auth-brand">동네<span>한입</span><small>내 취향의 음식배달</small></div><div className="auth-panel"><div className="auth-art">🥡 <span>🍕</span></div><h1>{mode==='login'?'오늘 뭐 먹지?':'반가워요!'}</h1><p>{mode==='login'?'우리 동네 맛있는 한 끼, 지금 시작하세요.':'고객 계정을 만들고 맛집을 둘러보세요.'}</p>{error&&<div className="toast error">{error}</div>}{notice&&<div className="toast good">{notice}</div>}
+ const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[name,setName]=useState(''),[tel,setTel]=useState('');
+ return <div className="auth-page"><div className="auth-brand">{BRAND_HEAD}<span>{BRAND_TAIL}</span><small>내 취향의 음식배달</small></div><div className="auth-panel"><div className="auth-art">🥡 <span>🍕</span></div><h1>{mode==='login'?'오늘 뭐 먹지?':'반가워요!'}</h1><p>{mode==='login'?'우리 동네 맛있는 한 끼, 지금 시작하세요.':'고객 계정을 만들고 맛집을 둘러보세요.'}</p>{error&&<div className="toast error">{error}</div>}{notice&&<div className="toast good">{notice}</div>}
  <form onSubmit={e=>{e.preventDefault();onSubmit(mode==='login'?{email,password}:{role:'CUSTOMER',email,password,name,tel});}}>
  <label className="field">이메일<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/>{mode==='signup'&&<small className="muted" style={{fontWeight:400}}>이메일 형식과 중복 여부만 확인하며, 인증 메일은 보내지 않습니다.</small>}</label><label className="field">비밀번호<input type="password" required minLength={mode==='signup'?8:undefined} value={password} onChange={e=>setPassword(e.target.value)}/></label>
  {mode==='signup'&&<><label className="field">이름<input required maxLength={50} value={name} onChange={e=>setName(e.target.value)}/></label><label className="field">전화번호<input required placeholder="010-1234-5678" value={tel} onChange={e=>setTel(e.target.value)}/></label></>}
- <button className="btn-primary" disabled={busy} type="submit">{mode==='login'?'로그인':'회원가입'}</button></form><button className="link-button" onClick={()=>setMode(mode==='login'?'signup':'login')}>{mode==='login'?'계정이 없나요? 회원가입':'이미 계정이 있나요? 로그인'}</button><small className="demo-note">시연용 계정: customer1@test.com / test1234</small></div></div>;
+ <button className="btn-primary" disabled={busy} type="submit">{mode==='login'?'로그인':'회원가입'}</button></form><button className="link-button" onClick={()=>setMode(mode==='login'?'signup':'login')}>{mode==='login'?'계정이 없나요? 회원가입':'이미 계정이 있나요? 로그인'}</button></div></div>;
 }
 // A-08: /api/auth/me GET에는 전화번호가 없으므로, 전화번호 입력란은 비워 두고 변경 시에만 전송한다.
 function ProfileEditForm({user,busy,error,onClose,onSave}){

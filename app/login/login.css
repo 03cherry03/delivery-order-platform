@@ -98,30 +98,4 @@
 }
 .lg-root .lg-signupLinks a:hover { border-color: var(--lg-mint-dark); background: var(--lg-mint-pale); }
 
-.lg-root .lg-demo { margin-top: 18px; text-align: center; }
-.lg-root .lg-demo p { margin: 0 0 8px; font-size: 12px; color: #98a2a4; }
-.lg-root .lg-demoBtns { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
-.lg-root .lg-demoBtns button {
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  color: #5b6569;
-  background: #f2f4f5;
-  border: 0;
-  border-radius: 99px;
-  padding: 6px 12px;
-  cursor: pointer;
-}
-.lg-root .lg-demoBtns button:hover { background: var(--lg-mint-pale); color: #007f72; }
-
-.lg-root .lg-mock {
-  width: min(420px, 100%);
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.7;
-  color: #8a6d1f;
-  background: #fff8e1;
-  border-radius: 12px;
-  padding: 10px 14px;
-}
 .lg-root .lg-mock code { font-size: 11px; background: #fff; padding: 1px 5px; border-radius: 5px; margin: 0 2px; }
