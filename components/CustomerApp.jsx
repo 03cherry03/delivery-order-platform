@@ -64,7 +64,7 @@ function updateOptionSelection(previous, group, optionId, checked){
 }
 function Btn({children,onClick,secondary=false,disabled=false,className=''}){return <button disabled={disabled} onClick={onClick} className={(secondary?'btn-outline':'btn-primary')+' '+className}>{children}</button>}
 
-export default function CustomerApp(){
+export default function CustomerApp({initialMode='login'}){
  const [user,setUser]=useState(undefined),[tab,setTab]=useState('home'),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [addresses,setAddresses]=useState([]),[addressId,setAddressId]=useState(null),[stores,setStores]=useState([]),[store,setStore]=useState(null),[menus,setMenus]=useState([]),[storeReviews,setStoreReviews]=useState([]);
  const [storePage,setStorePage]=useState({page:1,size:PAGE_SIZE,totalCount:0});
@@ -73,7 +73,7 @@ export default function CustomerApp(){
  const [cart,setCart]=useState(null),[orders,setOrders]=useState([]),[order,setOrder]=useState(null),[points,setPoints]=useState(null),[reviews,setReviews]=useState([]);
   const emptyPage=()=>({page:1,size:PAGE_SIZE,totalCount:0});
   const [orderPage,setOrderPage]=useState(emptyPage),[reviewPage,setReviewPage]=useState(emptyPage);
- const [category,setCategory]=useState('ALL'),[search,setSearch]=useState(''),[sort,setSort]=useState('DEFAULT'),[busy,setBusy]=useState(false),[authMode,setAuthMode]=useState(()=>typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('mode')==='signup'?'signup':'login'); // 로그인은 통합 로그인(/login), 가입은 ?mode=signup 으로 이 화면에서
+ const [category,setCategory]=useState('ALL'),[search,setSearch]=useState(''),[sort,setSort]=useState('DEFAULT'),[busy,setBusy]=useState(false),[authMode,setAuthMode]=useState(initialMode); // 로그인은 통합 로그인(/login), 가입은 /customer?mode=signup 으로 이 화면에서
  const [menuDetail,setMenuDetail]=useState(null),[selectedOptions,setSelectedOptions]=useState({}),[quantity,setQuantity]=useState(1);
  const [payMethod,setPayMethod]=useState('CARD'),[requestStore,setRequestStore]=useState(''),[requestRider,setRequestRider]=useState(''),[cutlery,setCutlery]=useState(false),[preview,setPreview]=useState(null);
  const [showAddressForm,setShowAddressForm]=useState(false),[editAddress,setEditAddress]=useState(null);
