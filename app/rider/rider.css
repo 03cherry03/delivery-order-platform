@@ -272,6 +272,14 @@
 .rd-profileSub { font-size: 13px; color: var(--fg-3); }
 .rd-resetBtn { margin-top: var(--s2); }
 
+/* ── 회원 탈퇴 (내 정보 맨 아래) ── */
+.rd-leave { display: flex; justify-content: center; padding: var(--s2) 0; }
+.rd-leaveBtn { border: none; background: none; cursor: pointer; color: var(--fg-4); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; padding: 8px; }
+.rd-leaveBtn:hover { color: var(--red); }
+.rd-leaveList { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--s4); padding-left: 18px; list-style: disc; color: var(--fg-2); font-size: 14px; }
+.rd-leaveWarn { color: var(--red); font-weight: 700; }
+.rd-modal .rd-modalActions { margin-top: var(--s2); }
+
 /* PC처럼 넓은 화면에서는 앱 틀 양옆에 선을 그어 휴대폰 화면처럼 보이게 한다 (고객·사장님 화면과 같음) */
 @media (min-width: 481px) {
   .rd-app, .rd-auth { box-shadow: 0 0 0 1px var(--border-1); }
