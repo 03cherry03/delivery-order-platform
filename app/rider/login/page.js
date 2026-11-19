@@ -2,6 +2,7 @@
 
 // A-01 로그인 → D-02로 상태 확인 → 배달 중(BUSY)이면 현재 배달, 아니면 배차 대기 목록
 import Link from 'next/link';
+import { BRAND } from '@/lib/brand';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { login, getRiderMe, logout, USE_MOCK } from '@/lib/rider/api';
@@ -46,8 +47,8 @@ function RiderMockLogin() {
     <main className="rd-auth">
       <div className="rd-authBox">
         <div className="rd-brand">
-          <div className="rd-logo">R</div>
-          <span className="rd-brandName">라이더</span>
+          <div className="rd-logo">라</div>
+          <span className="rd-brandName">{BRAND.rider}</span>
         </div>
         <h1 className="rd-authTitle">오늘도<br />안전하게 달려요</h1>
         <p className="rd-authSub">가까운 배차를 잡고, 픽업부터 완료까지 한 화면에서</p>

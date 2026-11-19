@@ -38,10 +38,9 @@
 .ow-storeId-menus-menus-catAdd > label { flex: 1; }
 .ow-storeId-menus-menus-catAdd button { height: 44px; }
 
-@media (max-width: 720px) {
-  .ow-storeId-menus-menus-row { flex-wrap: wrap; gap: var(--s2) var(--s3); }
-  .ow-storeId-menus-menus-rowMain { flex: 1 1 calc(100% - 60px); }
-  .ow-storeId-menus-menus-menuPrice { width: auto; text-align: left; margin-left: 40px; }
-  .ow-storeId-menus-menus-sale { width: auto; margin-left: auto; }
-  .ow-storeId-menus-menus-rowActions { width: 100%; justify-content: flex-end; }
-}
+/* 원래 (max-width: 720px) 에서만 쓰던 규칙 — 모바일 화면이라 항상 적용 */
+.ow-storeId-menus-menus-row { flex-wrap: wrap; gap: var(--s2) var(--s3); }
+.ow-storeId-menus-menus-rowMain { flex: 1 1 calc(100% - 60px); }
+.ow-storeId-menus-menus-menuPrice { width: auto; text-align: left; margin-left: 40px; }
+.ow-storeId-menus-menus-sale { width: auto; margin-left: auto; }
+.ow-storeId-menus-menus-rowActions { width: 100%; justify-content: flex-end; }

@@ -29,10 +29,11 @@
 .ow-storeId-sales-sales-ratio { display: inline-block; width: 120px; height: 8px; background: var(--bg-subtle); border-radius: var(--r-pill); overflow: hidden; vertical-align: middle; margin-right: 8px; }
 .ow-storeId-sales-sales-ratioBar { height: 100%; background: var(--mint6); }
 
-@media (max-width: 1100px) { .ow-storeId-sales-sales-kpis { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 720px) {
-  .ow-storeId-sales-sales-kpis { grid-template-columns: 1fr 1fr; }
-  .ow-storeId-sales-sales-ratioCol { width: auto; }
-  .ow-storeId-sales-sales-ratio { width: 60px; }
-  .ow-storeId-sales-sales-custom .input { width: 140px; }
-}
+/* 원래 (max-width: 1100px) 에서만 쓰던 규칙 — 모바일 화면이라 항상 적용 */
+.ow-storeId-sales-sales-kpis { grid-template-columns: repeat(3, 1fr); }
+
+/* 원래 (max-width: 720px) 에서만 쓰던 규칙 — 모바일 화면이라 항상 적용 */
+.ow-storeId-sales-sales-kpis { grid-template-columns: 1fr 1fr; }
+.ow-storeId-sales-sales-ratioCol { width: auto; }
+.ow-storeId-sales-sales-ratio { width: 60px; }
+.ow-storeId-sales-sales-custom .input { width: 140px; }

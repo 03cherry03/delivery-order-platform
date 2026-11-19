@@ -17,4 +17,6 @@
 .ow-root-auth-section { margin-top: var(--s7); }
 .ow-root-auth-sectionTitle { font-size: 17px; font-weight: 800; margin-bottom: var(--s4); }
 .ow-root-auth-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); }
-@media (max-width: 560px) { .ow-root-auth-grid2 { grid-template-columns: 1fr; } }
+
+/* 원래 (max-width: 560px) 에서만 쓰던 규칙 — 모바일 화면이라 항상 적용 */
+.ow-root-auth-grid2 { grid-template-columns: 1fr; }

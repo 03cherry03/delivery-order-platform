@@ -8,8 +8,6 @@ export const metadata = {
 export default function LoginLayout({ children }) {
   return (
     <div className="lg-root" lang="ko">
-      <link rel="stylesheet" precedence="default"
-        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
       {children}
     </div>
   );

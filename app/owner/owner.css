@@ -1,67 +1,12 @@
 /* 사장 화면 전용 스타일 — .owner-root 안에서만 적용돼서 고객·라이더·관리자 화면에 영향이 없다.
    기본 규칙은 :where()로 감싸 우선순위를 0으로 낮춰서, 화면별 클래스가 항상 이기게 했다. */
-/* 디자인 토큰 — 첨부한 배민 디자인 문서(baemin.md)의 색·타이포·간격·라운드 값을 옮겼다.
-   브랜드 로고·이름·캐릭터는 쓰지 않는다. */
-.owner-root {
-  /* 민트 (primary) */
-  --mint1: #e6fff8;
-  --mint2: #b0ffeb;
-  --mint5: #0cefd3;
-  --mint6: #00c9b9;
-  --mint7: #00a39b;
-  --mint8: #007d7b;
-  --primary: var(--mint5);
-  --primary-hover: oklch(0.69 0.13 184);
-  --primary-tint: oklch(0.97 0.05 178);
-
-  /* 쓰임별 액센트 */
-  --navy: oklch(0.30 0.13 286);
-  --navy-tint: oklch(0.94 0.04 287);
-  --red: oklch(0.63 0.24 27);
-  --red-tint: oklch(0.94 0.04 27);
-  --orange: #ff8400;
-  --orange-tint: #fff5ed;
-  --blue: #1a7cff;
-  --blue-tint: #edf7ff;
-  --green: #00b96b;
-  --green-tint: #edfdf4;
-  --star-gold: oklch(0.82 0.16 85);
-
-  /* 무채색 */
-  --bg-page: oklch(0.97 0 286);
-  --bg-surface: #ffffff;
-  --bg-subtle: oklch(0.96 0 286);
-  --bg-pressed: oklch(0.94 0 286);
-  --bg-inverse: oklch(0.18 0 0);
-  --fg-1: oklch(0.18 0 0);
-  --fg-2: oklch(0.34 0 0);
-  --fg-3: oklch(0.55 0 0);
-  --fg-4: oklch(0.71 0 0);
-  --border-1: oklch(0.94 0 286);
-  --border-2: oklch(0.87 0 286);
-
-  /* 간격 (4px 기준) */
-  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px;
-  --s6: 24px; --s7: 32px; --s8: 40px; --s9: 48px;
-
-  /* 라운드 */
-  --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px; --r-2xl: 24px;
-  --r-pill: 9999px;
-
-  /* 그림자 — 거의 안 쓴다 */
-  --shadow-1: 0 1px 2px oklch(0.18 0 0 / 0.04);
-  --shadow-2: 0 4px 12px oklch(0.18 0 0 / 0.06);
-  --shadow-3: 0 8px 24px oklch(0.18 0 0 / 0.08);
-
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --dur: 200ms;
-
-  --font-body: "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Roboto, sans-serif;
-}
-
+/* 색·간격·라운드·글꼴 토큰은 공용 파일(app/tokens.css)에 있다. */
 
 :where(.owner-root), :where(.owner-root) * { box-sizing: border-box; }
 :where(.owner-root) {
+  /* 모바일 앱 틀: PC에서도 가운데 480px 화면 하나로 보인다 (라이더·고객 화면과 같음) */
+  max-width: var(--app-w);
+  margin: 0 auto;
   min-height: 100vh;
   background: var(--bg-page);
   color: var(--fg-1);
@@ -98,7 +43,12 @@
 :where(.owner-root) .textarea { height: auto; min-height: 88px; padding: var(--s3); resize: vertical; line-height: 1.5; }
 :where(.owner-root) .input:focus, :where(.owner-root) .select:focus, :where(.owner-root) .textarea:focus { border-color: var(--fg-1); }
 
-@media (max-width: 480px) {
-  :where(.owner-root) { font-size: 14px; }
-  :where(.owner-root) h1 { font-size: 20px; }
+/* 원래 (max-width: 480px) 에서만 쓰던 규칙 — 모바일 화면이라 항상 적용 */
+:where(.owner-root) { font-size: 14px; }
+
+:where(.owner-root) h1 { font-size: 20px; }
+
+/* PC처럼 넓은 화면에서는 앱 틀 양옆에 선을 그어 휴대폰 화면처럼 보이게 한다 */
+@media (min-width: 481px) {
+  :where(.owner-root) { box-shadow: 0 0 0 1px var(--border-1); }
 }

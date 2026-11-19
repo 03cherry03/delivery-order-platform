@@ -1,50 +1,7 @@
 /* 라이더 화면 전용 스타일 — .rider-root 안에서만 적용돼서 고객·사장·관리자 화면에 영향이 없다.
-   토큰(색·간격·라운드)은 사장 화면(app/owner/owner.css)과 같은 값을 쓴다.
+   색·간격·라운드·글꼴 토큰은 공용 파일(app/tokens.css)에 있다.
    기본 규칙은 :where()로 감싸 우선순위를 0으로 낮춰서, 화면별 클래스가 항상 이기게 했다.
    라이더는 휴대폰으로 쓰므로 폭 480px짜리 앱 화면 하나로 만들었다. */
-.rider-root {
-  --mint1: #e6fff8;
-  --mint5: #0cefd3;
-  --mint6: #00c9b9;
-  --mint7: #00a39b;
-  --mint8: #007d7b;
-  --primary: var(--mint5);
-  --primary-hover: oklch(0.69 0.13 184);
-  --primary-tint: oklch(0.97 0.05 178);
-
-  --navy: oklch(0.30 0.13 286);
-  --navy-tint: oklch(0.94 0.04 287);
-  --red: oklch(0.63 0.24 27);
-  --red-tint: oklch(0.94 0.04 27);
-  --orange: #ff8400;
-  --orange-tint: #fff5ed;
-  --blue: #1a7cff;
-  --blue-tint: #edf7ff;
-
-  --bg-page: oklch(0.97 0 286);
-  --bg-surface: #ffffff;
-  --bg-subtle: oklch(0.96 0 286);
-  --bg-inverse: oklch(0.18 0 0);
-  --fg-1: oklch(0.18 0 0);
-  --fg-2: oklch(0.34 0 0);
-  --fg-3: oklch(0.55 0 0);
-  --fg-4: oklch(0.71 0 0);
-  --border-1: oklch(0.94 0 286);
-  --border-2: oklch(0.87 0 286);
-
-  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px;
-  --s6: 24px; --s7: 32px; --s8: 40px; --s9: 48px;
-  --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px; --r-2xl: 24px;
-  --r-pill: 9999px;
-  --shadow-2: 0 4px 12px oklch(0.18 0 0 / 0.06);
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --dur: 200ms;
-  --font-body: "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Roboto, sans-serif;
-
-  --app-w: 480px;
-  --nav-h: 64px;
-}
-
 :where(.rider-root), :where(.rider-root) * { box-sizing: border-box; }
 :where(.rider-root) {
   flex: 1;
@@ -96,12 +53,12 @@
   display: inline-flex; align-items: center; height: 24px; padding: 0 10px;
   border-radius: var(--r-pill); font-size: 12px; font-weight: 700; white-space: nowrap; flex: none;
 }
-.rd-tone-mint { background: var(--primary-tint); color: var(--mint8); }
-.rd-tone-orange { background: var(--orange-tint); color: #bb4500; }
-.rd-tone-blue { background: var(--blue-tint); color: #0f59b7; }
-.rd-tone-navy { background: var(--navy-tint); color: var(--navy); }
-.rd-tone-red { background: var(--red-tint); color: #bb2523; }
-.rd-tone-gray { background: var(--bg-subtle); color: var(--fg-2); }
+.rd-tone-mint { background: var(--tone-mint-bg); color: var(--tone-mint-fg); }
+.rd-tone-orange { background: var(--tone-orange-bg); color: var(--tone-orange-fg); }
+.rd-tone-blue { background: var(--tone-blue-bg); color: var(--tone-blue-fg); }
+.rd-tone-navy { background: var(--tone-navy-bg); color: var(--tone-navy-fg); }
+.rd-tone-red { background: var(--tone-red-bg); color: var(--tone-red-fg); }
+.rd-tone-gray { background: var(--tone-gray-bg); color: var(--tone-gray-fg); }
 
 /* ── 카드, 폼 ── */
 .rd-card { background: var(--bg-surface); border-radius: var(--r-lg); padding: var(--s5); }
@@ -176,11 +133,11 @@
 .rd-loadError { display: flex; flex-direction: column; align-items: center; gap: var(--s3); padding: var(--s7) var(--s4); color: var(--fg-2); background: var(--bg-surface); border-radius: var(--r-lg); font-size: 14px; }
 
 /* ── 로그인, 가입 ── */
-.rd-auth { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--s7) var(--s5); background: var(--bg-surface); }
+.rd-auth { max-width: var(--app-w); margin: 0 auto; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--s7) var(--s5); background: var(--bg-surface); }
 .rd-authBox { width: 100%; max-width: 400px; }
 .rd-brand { display: flex; align-items: center; gap: 10px; margin-bottom: var(--s7); }
 .rd-logo {
-  width: 40px; height: 40px; border-radius: var(--r-md); background: var(--fg-1); color: var(--primary);
+  width: 40px; height: 40px; border-radius: var(--r-md); background: var(--primary); color: var(--fg-1);
   display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px;
 }
 .rd-brandName { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
@@ -314,3 +271,8 @@
 .rd-profileName { font-weight: 800; font-size: 17px; }
 .rd-profileSub { font-size: 13px; color: var(--fg-3); }
 .rd-resetBtn { margin-top: var(--s2); }
+
+/* PC처럼 넓은 화면에서는 앱 틀 양옆에 선을 그어 휴대폰 화면처럼 보이게 한다 (고객·사장님 화면과 같음) */
+@media (min-width: 481px) {
+  .rd-app, .rd-auth { box-shadow: 0 0 0 1px var(--border-1); }
+}

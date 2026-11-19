@@ -2,6 +2,7 @@
 
 // A-06 사장 회원가입 — 회원 + 첫 가게 + 입점 신청을 한 번에 보낸다
 import Link from 'next/link';
+import { BRAND } from '@/lib/brand';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { signupOwner } from '@/lib/owner/api';
@@ -44,7 +45,7 @@ export default function SignupPage() {
       <form className={`${s.box} ${s.wide}`} onSubmit={submit}>
         <div className={s.brand}>
           <div className={s.logo}>사</div>
-          <span className={s.brandName}>사장님 센터</span>
+          <span className={s.brandName}>{BRAND.owner}</span>
         </div>
         <h1 className={s.title}>입점 신청</h1>
         <p className={s.sub}>가입하면 관리자 승인 후 영업을 시작할 수 있어요</p>

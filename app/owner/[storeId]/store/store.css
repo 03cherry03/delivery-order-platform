@@ -12,8 +12,10 @@
 .ow-storeId-store-store-two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); }
 .ow-storeId-store-store-actions { display: flex; justify-content: flex-end; }
 .ow-storeId-store-store-error { background: var(--red-tint); color: #bb2523; padding: 10px 14px; border-radius: var(--r-md); font-size: 14px; margin-bottom: var(--s3); }
-@media (max-width: 1100px) { .ow-storeId-store-store-grid { grid-template-columns: 1fr; } }
-@media (max-width: 720px) {
-  .ow-storeId-store-store-stats { grid-template-columns: 1fr 1fr; }
-  .ow-storeId-store-store-two { grid-template-columns: 1fr; }
-}
+
+/* 원래 (max-width: 1100px) 에서만 쓰던 규칙 — 모바일 화면이라 항상 적용 */
+.ow-storeId-store-store-grid { grid-template-columns: 1fr; }
+
+/* 원래 (max-width: 720px) 에서만 쓰던 규칙 — 모바일 화면이라 항상 적용 */
+.ow-storeId-store-store-stats { grid-template-columns: 1fr 1fr; }
+.ow-storeId-store-store-two { grid-template-columns: 1fr; }

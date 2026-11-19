@@ -3,6 +3,7 @@
 // D-01 라이더 회원가입 → 바로 로그인(A-01)해서 배차 대기 목록으로
 // 라이더는 관리자 승인 없이 바로 배달을 시작할 수 있다 (명세서 D-01)
 import Link from 'next/link';
+import { BRAND } from '@/lib/brand';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { signupRider, login } from '@/lib/rider/api';
@@ -54,9 +55,11 @@ export default function RiderSignupPage() {
     <main className="rd-auth">
       <div className="rd-authBox">
         <div className="rd-brand">
-          <div className="rd-logo">R</div>
-          <span className="rd-brandName">라이더 회원가입</span>
+          <div className="rd-logo">라</div>
+          <span className="rd-brandName">{BRAND.rider}</span>
         </div>
+        <h1 className="rd-authTitle">라이더 가입</h1>
+        <p className="rd-authSub">가입하면 바로 배차를 받을 수 있어요</p>
         <form className="rd-form" onSubmit={submit} noValidate>
           <Field label="이메일" required error={errors.email}>
             <input className="rd-input" type="email" autoComplete="email" required {...input('email')} />

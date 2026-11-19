@@ -1,16 +1,18 @@
 /* Reference: https://www.getdesign.kr/services/baemin
    Theme tokens applied to the administrator workspace only. */
 .admin-root {
-  --adm-mint: oklch(0.88 0.18 178);
-  --adm-mint-hover: oklch(0.69 0.13 184);
-  --adm-mint-soft: oklch(0.97 0.05 178);
-  --adm-mint-dark: oklch(0.40 0.07 191);
-  --adm-navy: oklch(0.30 0.13 286);
-  --adm-ink: oklch(0.18 0 0);
-  --adm-muted: #66696e;
-  --adm-line: #e9e9ed;
-  --adm-bg: oklch(0.97 0.00 286);
-  --adm-radius: 16px;
+  /* 공용 토큰(app/tokens.css)에 연결한다. 관리자 화면 CSS는 --adm-* 이름을 그대로 쓴다. */
+  --adm-mint: var(--primary);
+  --adm-mint-hover: var(--primary-hover);
+  --adm-mint-soft: var(--primary-tint);
+  --adm-mint-dark: var(--mint8);
+  --adm-navy: var(--navy);
+  --adm-ink: var(--fg-1);
+  --adm-muted: var(--fg-3);
+  --adm-line: var(--border-1);
+  --adm-bg: var(--bg-page);
+  --adm-radius: var(--r-lg);
+  font-family: var(--font-body);
 }
 .adm-btn { border-radius: 9999px; }
 .adm-btn-primary { color: #151718; }

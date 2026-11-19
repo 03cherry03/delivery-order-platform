@@ -10,7 +10,7 @@
 .ow-c-HoursEditor-next { font-size: 12px; font-weight: 700; color: var(--navy); background: var(--navy-tint); padding: 2px 8px; border-radius: var(--r-pill); }
 .ow-c-HoursEditor-remove { width: 32px; height: 32px; border: none; border-radius: 50%; background: var(--bg-subtle); cursor: pointer; font-size: 18px; color: var(--fg-3); }
 .ow-c-HoursEditor-remove:hover { color: var(--fg-1); }
-@media (max-width: 480px) {
-  .ow-c-HoursEditor-row { flex-direction: column; gap: var(--s2); }
-  .ow-c-HoursEditor-time { width: 118px; }
-}
+
+/* 원래 (max-width: 480px) 에서만 쓰던 규칙 — 모바일 화면이라 항상 적용 */
+.ow-c-HoursEditor-row { flex-direction: column; gap: var(--s2); }
+.ow-c-HoursEditor-time { width: 118px; }

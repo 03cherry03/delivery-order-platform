@@ -1,50 +1,35 @@
-.ow-storeId-shell-shell { display: flex; min-height: 100vh; }
-.ow-storeId-shell-side {
-  width: 232px; flex: none; background: var(--bg-surface); padding: var(--s5) var(--s3);
-  display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
-}
-.ow-storeId-shell-brand { display: flex; align-items: center; gap: 10px; padding: 0 var(--s2) var(--s6); }
-.ow-storeId-shell-logo { width: 34px; height: 34px; border-radius: var(--r-md); background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 900; }
-.ow-storeId-shell-brandName { font-weight: 800; font-size: 16px; letter-spacing: -0.02em; }
-.ow-storeId-shell-nav { display: flex; flex-direction: column; gap: 2px; }
-.ow-storeId-shell-navItem {
-  display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 var(--s3);
-  border-radius: var(--r-md); font-weight: 600; color: var(--fg-2); transition: background var(--dur) var(--ease-out);
-}
-.ow-storeId-shell-navItem:hover { background: var(--bg-subtle); color: var(--fg-1); }
-.ow-storeId-shell-navActive { background: var(--fg-1); color: var(--bg-surface); }
-.ow-storeId-shell-navActive:hover { background: var(--fg-1); color: var(--bg-surface); }
-.ow-storeId-shell-navCount { background: var(--orange); color: #fff; font-size: 12px; font-weight: 800; min-width: 22px; height: 22px; border-radius: var(--r-pill); display: inline-flex; align-items: center; justify-content: center; padding: 0 6px; }
-.ow-storeId-shell-sideFoot { margin-top: auto; padding: var(--s3); display: flex; flex-direction: column; gap: 4px; }
-.ow-storeId-shell-linkBtn { border: none; background: none; padding: 0; text-align: left; cursor: pointer; font-size: 13px; color: var(--fg-3); text-decoration: underline; }
+/* 가게 화면 틀 (모바일): 위쪽 헤더 + 본문 + 아래쪽 탭 바. 라이더 화면(.rd-app)과 같은 구조다. */
+.ow-storeId-shell-app { min-height: 100vh; position: relative; }
 
-.ow-storeId-shell-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .ow-storeId-shell-top {
-  height: 68px; display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
-  padding: 0 var(--s7); background: var(--bg-page); position: sticky; top: 0; z-index: 10;
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
+  padding: 12px var(--s4); background: var(--bg-surface); border-bottom: 1px solid var(--border-1);
 }
-.ow-storeId-shell-storeInfo { display: flex; align-items: center; gap: var(--s3); min-width: 0; }
-.ow-storeId-shell-storeName { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ow-storeId-shell-storeInfo { display: flex; align-items: center; gap: var(--s2); min-width: 0; }
+.ow-storeId-shell-storeName { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ow-storeId-shell-caret { font-size: 12px; color: var(--fg-3); }
-.ow-storeId-shell-operCtl { display: flex; align-items: center; gap: var(--s2); background: var(--bg-surface); padding: 6px 8px 6px 14px; border-radius: var(--r-pill); font-weight: 700; flex: none; }
-.ow-storeId-shell-closedBar { margin: 0 var(--s7) var(--s2); background: var(--navy-tint); color: var(--navy); padding: 10px 14px; border-radius: var(--r-md); font-size: 14px; }
-.ow-storeId-shell-content { padding: var(--s3) var(--s7) var(--s9); flex: 1; min-width: 0; }
+.ow-storeId-shell-operCtl { display: flex; align-items: center; gap: var(--s2); background: var(--bg-subtle); padding: 4px 6px 4px 12px; border-radius: var(--r-pill); font-weight: 700; flex: none; }
+.ow-storeId-shell-operCtl span { font-size: 12px; }
 
-.ow-storeId-shell-blocked { max-width: 480px; margin: 15vh auto 0; padding: 0 var(--s4); display: flex; flex-direction: column; gap: var(--s3); align-items: flex-start; }
+.ow-storeId-shell-closedBar { margin: var(--s3) var(--s4) 0; background: var(--navy-tint); color: var(--navy); padding: 10px 14px; border-radius: var(--r-md); font-size: 13px; }
+.ow-storeId-shell-content { padding: var(--s4) var(--s4) calc(var(--nav-h) + var(--s7) + env(safe-area-inset-bottom)); min-width: 0; }
 
-@media (max-width: 900px) {
-  .ow-storeId-shell-shell { flex-direction: column; }
-  .ow-storeId-shell-side { width: 100%; height: auto; position: static; padding: var(--s3) var(--s4); flex-direction: row; align-items: center; gap: var(--s3); overflow-x: auto; }
-  .ow-storeId-shell-brand { padding: 0; }
-  .ow-storeId-shell-brandName, .ow-storeId-shell-sideFoot { display: none; }
-  .ow-storeId-shell-nav { flex-direction: row; gap: 4px; }
-  .ow-storeId-shell-navItem { height: 38px; white-space: nowrap; gap: 6px; }
-  .ow-storeId-shell-top { padding: 0 var(--s4); height: 60px; }
-  .ow-storeId-shell-storeName { font-size: 17px; }
-  .ow-storeId-shell-closedBar { margin: 0 var(--s4) var(--s2); }
-  .ow-storeId-shell-content { padding: var(--s2) var(--s4) var(--s8); }
+.ow-storeId-shell-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); z-index: 30;
+  width: 100%; max-width: var(--app-w); height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--bg-surface); border-top: 1px solid var(--border-1);
+  display: grid; grid-template-columns: repeat(5, 1fr);
 }
-@media (max-width: 480px) {
-  .ow-storeId-shell-operCtl span { display: none; }
-  .ow-storeId-shell-operCtl { padding: 6px; }
+.ow-storeId-shell-navItem { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 600; color: var(--fg-4); }
+.ow-storeId-shell-navActive { color: var(--fg-1); }
+.ow-storeId-shell-navIcon { position: relative; display: flex; }
+.ow-storeId-shell-navCount {
+  position: absolute; top: -6px; left: 14px;
+  background: var(--orange); color: #fff; font-size: 10px; font-weight: 800;
+  min-width: 18px; height: 18px; border-radius: var(--r-pill); padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center;
 }
+
+.ow-storeId-shell-blocked { padding: 15vh var(--s4) 0; display: flex; flex-direction: column; gap: var(--s3); align-items: flex-start; }

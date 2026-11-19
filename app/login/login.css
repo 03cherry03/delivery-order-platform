@@ -1,15 +1,16 @@
-/* 통합 로그인 화면. 모든 규칙은 .lg-root 안에서만 적용한다. 색은 고객 화면(동네한입) 민트에 맞춘다. */
+/* 통합 로그인 화면. 모든 규칙은 .lg-root 안에서만 적용한다. */
 .lg-root {
-  --lg-mint: #00e0c6;
-  --lg-mint-dark: #00a39b;
-  --lg-mint-pale: #e6fff8;
-  --lg-text: #191a1b;
-  --lg-sub: #6b7478;
-  --lg-line: #e3e7e9;
-  font-family: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  /* 색·글꼴은 공용 토큰(app/tokens.css)을 쓴다 */
+  --lg-mint: var(--primary);
+  --lg-mint-dark: var(--mint7);
+  --lg-mint-pale: var(--mint1);
+  --lg-text: var(--fg-1);
+  --lg-sub: var(--fg-3);
+  --lg-line: var(--border-1);
+  font-family: var(--font-body);
   color: var(--lg-text);
   min-height: 100vh;
-  background: linear-gradient(160deg, #dffff5 1%, #fafafa 60%);
+  background: linear-gradient(160deg, var(--mint1) 1%, var(--bg-page) 60%);
 }
 .lg-root *, .lg-root *::before, .lg-root *::after { box-sizing: border-box; }
 
@@ -65,7 +66,7 @@
   font-weight: 800;
   cursor: pointer;
 }
-.lg-root .lg-btn:hover:not(:disabled) { background: #00d2b9; }
+.lg-root .lg-btn:hover:not(:disabled) { background: var(--primary-hover); }
 .lg-root .lg-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .lg-root .lg-btnGhost { background: #fff; border: 1px solid #d2d7d9; color: var(--lg-text); }
 .lg-root .lg-btnGhost:hover:not(:disabled) { background: #f4f6f7; }

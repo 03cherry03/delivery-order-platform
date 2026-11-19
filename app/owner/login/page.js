@@ -2,6 +2,7 @@
 
 // A-01 로그인
 import Link from 'next/link';
+import { BRAND } from '@/lib/brand';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { login } from '@/lib/owner/api';
@@ -46,7 +47,7 @@ function OwnerMockLogin() {
       <div className={s.box}>
         <div className={s.brand}>
           <div className={s.logo}>사</div>
-          <span className={s.brandName}>사장님 센터</span>
+          <span className={s.brandName}>{BRAND.owner}</span>
         </div>
         <h1 className={s.title}>오늘도<br />든든하게 시작해요</h1>
         <p className={s.sub}>주문 접수부터 매출까지 한곳에서 관리하세요</p>
