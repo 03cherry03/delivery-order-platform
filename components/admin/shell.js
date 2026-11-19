@@ -4,6 +4,9 @@ import { usePathname,useRouter } from 'next/navigation';
 import { createContext,useContext,useEffect,useState } from 'react';
 import { L } from '@/lib/admin/labels';
 import { getMe,getSummary,logout,USE_MOCK,notifyChanged } from '@/lib/admin/api';
+import { loginUrl } from '@/lib/auth/session';
+// 로그인 화면 주소. 실제 API면 통합 로그인(/login?next=지금 주소), 목업이면 관리자 로그인
+const toLogin=()=>(USE_MOCK?'/admin/login':loginUrl());
 import { resetAdminDemo } from '@/lib/admin/mock/server';
 import { useLoad } from '@/lib/admin/hooks';
 import { Button,Confirm,Loading,ErrorBox,cx } from './ui';
@@ -26,8 +29,8 @@ export default function AdminShell({children}){
  useEffect(()=>{
   if(isLogin)return;
   let valid=true;
-  getMe().then((u)=>{if(!valid)return;if(u?.role!=='ADMIN'){setAuthError({message:L.noAccess,code:'FORBIDDEN'});setMe(null);}else{setMe(u);setAuthError(null);}setChecking(false);}).catch((e)=>{if(!valid)return;setChecking(false);if(e.status===401)router.replace('/admin/login');else setAuthError(e);});
-  const expired=()=>{setMe(null);router.replace('/admin/login');};
+  getMe().then((u)=>{if(!valid)return;if(u?.role!=='ADMIN'){if(!USE_MOCK){router.replace(loginUrl());return;}setAuthError({message:L.noAccess,code:'FORBIDDEN'});setMe(null);}else{setMe(u);setAuthError(null);}setChecking(false);}).catch((e)=>{if(!valid)return;setChecking(false);if(e.status===401)router.replace(toLogin());else setAuthError(e);});
+  const expired=()=>{setMe(null);router.replace(toLogin());};
   window.addEventListener('admin-session-expired',expired);
   return()=>{valid=false;window.removeEventListener('admin-session-expired',expired);};
  },[isLogin,router]);

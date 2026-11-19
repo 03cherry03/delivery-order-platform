@@ -1,5 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {useRouter} from 'next/navigation';
+import {loginUrl} from '@/lib/auth/session';
 const API='/api/customer';
 const PAGE_SIZE=20; // customer.md: page >= 1, size 1~100, default 20
 const cash=n=>Number(n??0).toLocaleString('ko-KR')+'원';
@@ -71,12 +73,14 @@ export default function CustomerApp(){
  const [cart,setCart]=useState(null),[orders,setOrders]=useState([]),[order,setOrder]=useState(null),[points,setPoints]=useState(null),[reviews,setReviews]=useState([]);
   const emptyPage=()=>({page:1,size:PAGE_SIZE,totalCount:0});
   const [orderPage,setOrderPage]=useState(emptyPage),[reviewPage,setReviewPage]=useState(emptyPage);
- const [category,setCategory]=useState('ALL'),[search,setSearch]=useState(''),[sort,setSort]=useState('DEFAULT'),[busy,setBusy]=useState(false),[authMode,setAuthMode]=useState('login');
+ const [category,setCategory]=useState('ALL'),[search,setSearch]=useState(''),[sort,setSort]=useState('DEFAULT'),[busy,setBusy]=useState(false),[authMode,setAuthMode]=useState(()=>typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('mode')==='signup'?'signup':'login'); // 로그인은 통합 로그인(/login), 가입은 ?mode=signup 으로 이 화면에서
  const [menuDetail,setMenuDetail]=useState(null),[selectedOptions,setSelectedOptions]=useState({}),[quantity,setQuantity]=useState(1);
  const [payMethod,setPayMethod]=useState('CARD'),[requestStore,setRequestStore]=useState(''),[requestRider,setRequestRider]=useState(''),[cutlery,setCutlery]=useState(false),[preview,setPreview]=useState(null);
  const [showAddressForm,setShowAddressForm]=useState(false),[editAddress,setEditAddress]=useState(null);
  const [reviewOrder,setReviewOrder]=useState(null),[reviewEdit,setReviewEdit]=useState(null);
  const [profileDialog,setProfileDialog]=useState(null); // 'edit' | 'withdraw'
+ const router=useRouter();
+ const loginQuery=useRef(null); // 통합 로그인으로 보낼 때 붙일 쿼리 (null이면 ?next=/customer)
  const sessionEpoch=useRef(0);
   const listGeneration=useRef(0); // refresh 발생 시 진행 중인 더보기 응답 무효화
   const storeListGeneration=useRef(0); // 주소·검색·정렬 변경 시 이전 가게 목록 응답 무효화
@@ -123,6 +127,11 @@ export default function CustomerApp(){
    });
   };
  useEffect(()=>{api('/api/auth/me').then(u=>{setUser(u);if(u.role==='CUSTOMER')refresh().catch(alertError);}).catch(()=>setUser(null));},[refresh]);
+ // 로그인 안 함 → 통합 로그인. 고객이 아닌 계정 → 통합 로그인에서 내 화면으로 갈지 계정을 바꿀지 고르게 한다.
+ useEffect(()=>{
+  if(user===null&&authMode==='login')router.replace(loginQuery.current===null?loginUrl('/customer'):'/login'+loginQuery.current);
+  else if(user&&user.role!=='CUSTOMER')router.replace(loginUrl('/customer'));
+ },[user,authMode,router]);
  useEffect(()=>{
   let active=true;
   ++storeListGeneration.current;
@@ -217,6 +226,7 @@ await api(API+'/cart/items','POST',{
  const reloadTab=(target)=>{setProfileDialog(null);setTab(target);setError('');setNotice('');if(['cart','orders','points','addresses','profile'].includes(target))refresh().catch(alertError);};
  const logout=()=>execute(async()=>{
   await api('/api/auth/logout','POST',{});
+  loginQuery.current='';
   sessionEpoch.current+=1;listGeneration.current+=1;
   storeListGeneration.current+=1;publicReviewGeneration.current+=1;
   setUser(null);setTab('home');setAddresses([]);setAddressId(null);setStores([]);setStore(null);
@@ -233,6 +243,7 @@ await api(API+'/cart/items','POST',{
    const result=await api('/api/auth/me','DELETE',{password});
    sessionEpoch.current+=1;listGeneration.current+=1;
    storeListGeneration.current+=1;publicReviewGeneration.current+=1;
+   loginQuery.current='?withdrawn=1';
    setProfileDialog(null);setUser(null);setAuthMode('login');setTab('home');
   setAddresses([]);setAddressId(null);setStores([]);setStore(null);setMenus([]);setStoreReviews([]);
   setCart(null);setOrders([]);setOrderPage(emptyPage());setOrder(null);setPoints(null);setReviews([]);setReviewPage(emptyPage());
@@ -249,8 +260,9 @@ await api(API+'/cart/items','POST',{
  const deleteReview=(r)=>{if(!window.confirm('리뷰를 삭제할까요? 삭제 후 다시 작성할 수 없어요.'))return;execute(async()=>{await api(API+'/reviews/'+r.reviewId,'DELETE');await refresh();inform('리뷰를 삭제했어요.');});};
  const selectedOptionTotal=useMemo(()=>menuDetail?.optionGroups.flatMap(g=>g.options.filter(o=>(selectedOptions[g.optionGroupId]??[]).includes(o.optionId))).reduce((s,o)=>s+o.price,0)??0,[menuDetail,selectedOptions]);
  if(user===undefined)return <Loading/>;
- if(!user)return <AuthForm mode={authMode} setMode={setAuthMode} busy={busy} error={error} onSubmit={data=>execute(async()=>{const mode=authMode;await api('/api/auth/'+(mode==='login'?'login':'signup'),'POST',data);if(mode==='signup'){setAuthMode('login');inform('가입이 완료됐어요. 로그인해주세요.');return;}const u=await api('/api/auth/me');sessionEpoch.current+=1;listGeneration.current+=1;storeListGeneration.current+=1;publicReviewGeneration.current+=1;setAddresses([]);setAddressId(null);setStores([]);setOrders([]);setOrderPage(emptyPage());setReviews([]);setReviewPage(emptyPage());setPoints(null);setUser(u);if(u.role==='CUSTOMER')await refresh();})} notice={notice}/>;
- if(user.role!=='CUSTOMER')return <div className="role-placeholder"><div className="brand">동네<span>한입</span></div><div className="panel"><h1>{user.name}님, 로그인되었습니다.</h1><p>현재 패키지는 고객 화면 구현본이에요. 공통 세션은 {user.role} 역할로 유지되며, 사장·관리자 화면은 담당 팀원의 라우트를 연결하면 돼요.</p><Btn onClick={logout}>로그아웃</Btn></div></div>;
+ if(!user&&authMode==='login')return <Loading/>;
+ if(!user)return <AuthForm mode={authMode} setMode={setAuthMode} busy={busy} error={error} onSubmit={data=>execute(async()=>{const mode=authMode;await api('/api/auth/'+(mode==='login'?'login':'signup'),'POST',data);if(mode==='signup'){loginQuery.current='?joined=1';setAuthMode('login');return;}const u=await api('/api/auth/me');sessionEpoch.current+=1;listGeneration.current+=1;storeListGeneration.current+=1;publicReviewGeneration.current+=1;setAddresses([]);setAddressId(null);setStores([]);setOrders([]);setOrderPage(emptyPage());setReviews([]);setReviewPage(emptyPage());setPoints(null);setUser(u);if(u.role==='CUSTOMER')await refresh();})} notice={notice}/>;
+ if(user.role!=='CUSTOMER')return <Loading/>;
  return <div className="app-shell">
   <header className="top-header"><div className="header-inner"><button className="brand" onClick={()=>reloadTab('home')}>동네<span>한입</span><small>음식배달</small></button>
    <div className="address-box"><span>📍 배달 받을 주소</span><select value={addressId??''} onChange={e=>{setAddressId(Number(e.target.value));setStore(null);setMenuDetail(null);setPreview(null);setTab('home');}}><option value="" disabled>주소 선택</option>{addresses.map(a=><option key={a.addressId} value={a.addressId}>{a.addressName} · {a.address}</option>)}</select></div>

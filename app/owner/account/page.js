@@ -31,7 +31,7 @@ export default function AccountPage() {
     try {
       await withdraw(password);
       toast('탈퇴했어요. 그동안 고마웠어요');
-      router.replace('/owner/login');
+      router.replace('/owner/login?withdrawn=1');
     } catch (err) {
       setError(MESSAGES[err.code] || err.message);
     } finally {

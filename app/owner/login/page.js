@@ -7,8 +7,16 @@ import { useState } from 'react';
 import { login } from '@/lib/owner/api';
 import { Button, Field } from '@/components/owner/ui';
 import s from '../auth.styles';
+import ToUnifiedLogin from '@/components/auth/ToUnifiedLogin';
 
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== 'false';
+
+// 실제 API를 쓸 때는 통합 로그인(/login)을 쓴다. 목업 모드에서만 이 화면을 보여 준다.
 export default function LoginPage() {
+  return USE_MOCK ? <OwnerMockLogin /> : <ToUnifiedLogin />;
+}
+
+function OwnerMockLogin() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -53,7 +61,7 @@ export default function LoginPage() {
           <Button type="submit" size="lg" full disabled={busy}>{busy ? '확인하는 중' : '로그인'}</Button>
         </form>
         <p className={s.foot}>아직 입점 전이신가요?<Link href="/owner/signup">사장님 회원가입</Link></p>
-        {process.env.NEXT_PUBLIC_USE_MOCK !== 'false' && (
+        {USE_MOCK && (
           <div className={s.demo}>목업 모드 · 테스트 계정 owner@test.com / test1234</div>
         )}
       </div>

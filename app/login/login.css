@@ -1,0 +1,126 @@
+/* 통합 로그인 화면. 모든 규칙은 .lg-root 안에서만 적용한다. 색은 고객 화면(동네한입) 민트에 맞춘다. */
+.lg-root {
+  --lg-mint: #00e0c6;
+  --lg-mint-dark: #00a39b;
+  --lg-mint-pale: #e6fff8;
+  --lg-text: #191a1b;
+  --lg-sub: #6b7478;
+  --lg-line: #e3e7e9;
+  font-family: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  color: var(--lg-text);
+  min-height: 100vh;
+  background: linear-gradient(160deg, #dffff5 1%, #fafafa 60%);
+}
+.lg-root *, .lg-root *::before, .lg-root *::after { box-sizing: border-box; }
+
+.lg-root .lg-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 40px 16px;
+}
+.lg-root .lg-checking { color: var(--lg-mint-dark); font-weight: 700; }
+
+.lg-root .lg-brand { font-size: 36px; font-weight: 900; letter-spacing: -2px; }
+.lg-root .lg-brand span { color: var(--lg-mint-dark); }
+
+.lg-root .lg-card {
+  width: min(420px, 100%);
+  background: #fff;
+  border-radius: 22px;
+  padding: 32px 30px 26px;
+  box-shadow: 0 10px 45px rgba(0, 0, 0, 0.06);
+}
+.lg-root .lg-title { margin: 0 0 8px; font-size: 26px; font-weight: 800; letter-spacing: -0.8px; }
+.lg-root .lg-sub { margin: 0 0 22px; color: var(--lg-sub); font-size: 14px; line-height: 1.6; }
+.lg-root .lg-sub b { color: var(--lg-text); }
+
+.lg-root .lg-form { display: grid; gap: 14px; }
+.lg-root .lg-field { display: grid; gap: 7px; font-size: 13px; font-weight: 700; color: #4d5558; }
+.lg-root .lg-field input {
+  font: inherit;
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--lg-text);
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid #d8dddf;
+  border-radius: 11px;
+  background: #fafafa;
+}
+.lg-root .lg-field input:focus { outline: 2px solid var(--lg-mint-dark); outline-offset: -1px; background: #fff; }
+
+.lg-root .lg-btn {
+  font: inherit;
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--lg-mint);
+  color: #063a33;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.lg-root .lg-btn:hover:not(:disabled) { background: #00d2b9; }
+.lg-root .lg-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.lg-root .lg-btnGhost { background: #fff; border: 1px solid #d2d7d9; color: var(--lg-text); }
+.lg-root .lg-btnGhost:hover:not(:disabled) { background: #f4f6f7; }
+.lg-root .lg-form .lg-btn { margin-top: 6px; }
+.lg-root .lg-stack { display: grid; gap: 10px; }
+
+.lg-root .lg-error,
+.lg-root .lg-notice {
+  padding: 11px 14px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.lg-root .lg-error { background: #ffeeef; color: #bd292c; }
+.lg-root .lg-notice { background: var(--lg-mint-pale); color: #007f72; margin-bottom: 16px; }
+
+.lg-root .lg-signup { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--lg-line); text-align: center; }
+.lg-root .lg-signup p { margin: 0 0 10px; font-size: 13px; color: var(--lg-sub); }
+.lg-root .lg-signupLinks { display: flex; justify-content: center; gap: 8px; }
+.lg-root .lg-signupLinks a {
+  flex: 1;
+  padding: 10px 0;
+  border: 1px solid var(--lg-line);
+  border-radius: 10px;
+  color: var(--lg-text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+}
+.lg-root .lg-signupLinks a:hover { border-color: var(--lg-mint-dark); background: var(--lg-mint-pale); }
+
+.lg-root .lg-demo { margin-top: 18px; text-align: center; }
+.lg-root .lg-demo p { margin: 0 0 8px; font-size: 12px; color: #98a2a4; }
+.lg-root .lg-demoBtns { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.lg-root .lg-demoBtns button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5b6569;
+  background: #f2f4f5;
+  border: 0;
+  border-radius: 99px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.lg-root .lg-demoBtns button:hover { background: var(--lg-mint-pale); color: #007f72; }
+
+.lg-root .lg-mock {
+  width: min(420px, 100%);
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #8a6d1f;
+  background: #fff8e1;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.lg-root .lg-mock code { font-size: 11px; background: #fff; padding: 1px 5px; border-radius: 5px; margin: 0 2px; }

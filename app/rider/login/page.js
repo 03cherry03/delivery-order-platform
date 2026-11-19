@@ -6,8 +6,14 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { login, getRiderMe, logout, USE_MOCK } from '@/lib/rider/api';
 import { Button, Field } from '@/components/rider/ui';
+import ToUnifiedLogin from '@/components/auth/ToUnifiedLogin';
 
+// 실제 API를 쓸 때는 통합 로그인(/login)을 쓴다. 목업 모드에서만 이 화면을 보여 준다.
 export default function RiderLoginPage() {
+  return USE_MOCK ? <RiderMockLogin /> : <ToUnifiedLogin />;
+}
+
+function RiderMockLogin() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

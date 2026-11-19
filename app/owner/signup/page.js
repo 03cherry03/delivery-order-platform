@@ -29,7 +29,7 @@ export default function SignupPage() {
     try {
       await signupOwner({ ...acc, store: sb.body });
       toast('가입했어요. 입점 승인을 기다리는 동안 로그인할 수 있어요.');
-      router.push('/owner/login');
+      router.push('/owner/login?joined=1');
     } catch (err) {
       setErrors(err.fields || {});
       setFormError(err.message);
