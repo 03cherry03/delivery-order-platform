@@ -40,7 +40,7 @@
         ],
         "operationId": "A01",
         "summary": "A-01 로그인",
-        "description": "활성 회원의 이메일·비밀번호를 확인하고 세션을 발급한다. 탈퇴 이메일로 재가입했다면 새 활성 회원만 인증한다.\n\n권한: 누구나\n\nDB 처리:\n- 읽는 테이블: `TB_MBR` / 바꾸는 테이블: `TB_MBR`.\n- 트랜잭션: 활성 회원 확인·비밀번호 검증·최종 로그인 시각 갱신. 성공 후 쿠키 발급.\n- 서버 검사: 이메일 조회 조건에 `TB_MBR.MBR_STTS='ACTIVE'`를 포함하고 저장 해시로 비밀번호를 검증한다.\n- 상태 변경 / VIEW·트리거: `TB_MBR.MBR_LOGIN_DTTM`을 현재 한국 시각으로 갱신한다. `TRG_MBR_MOD_DTTM`이 수정 시각을 기록한다. VIEW 사용 없음.",
+        "description": "활성 회원의 이메일·비밀번호를 확인하고 세션을 발급한다. 탈퇴 이메일로 재가입했다면 새 활성 회원만 인증한다.\n\n권한: 누구나\n\nDB 처리:\n- 읽는 테이블: `TB_MBR` / 바꾸는 테이블: `TB_MBR`.\n- 트랜잭션: 활성 회원 확인·비밀번호 검증·최종 로그인 시각 갱신. 성공 후 쿠키 발급.\n- 서버 검사: 이메일 조회 조건에 `TB_MBR.MBR_STTS='ACTIVE'`를 포함하고 저장 해시로 비밀번호를 검증한다.\n- 로그인 실패 횟수는 이메일의 앞뒤 공백을 제거하고 소문자로 변환한 키로 서버 메모리에 기록한다. 비밀번호 불일치 및 미가입·비활성 이메일의 401을 집계하고, 로그인 성공 시 초기화한다.\n- 상태 변경 / VIEW·트리거: `TB_MBR.MBR_LOGIN_DTTM`을 현재 한국 시각으로 갱신한다. `TRG_MBR_MOD_DTTM`이 수정 시각을 기록한다. VIEW 사용 없음.",
         "requestBody": {
           "required": true,
           "content": {
@@ -123,6 +123,27 @@
                       "error": {
                         "code": "LOGIN_FAILED",
                         "message": "활성 이메일 없음, 비밀번호 불일치, 탈퇴 회원만 존재. 계정 존재 여부를 구분하지 않는 같은 메시지 사용"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "HTTP 429 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "LOGIN_LOCKED": {
+                    "value": {
+                      "success": false,
+                      "error": {
+                        "code": "LOGIN_LOCKED",
+                        "message": "10분 내 실패 5회(5번째는 401) 이후 10분간 올바른 비밀번호도 검증하지 않음. `Retry-After` 헤더는 남은 초, 메시지는 남은 분을 안내"
                       }
                     }
                   }
@@ -12217,10 +12238,10 @@
         ],
         "operationId": "X00",
         "summary": "X-00 관리자 요약",
-        "description": "처리 대기 신청·신고 수와 활성 리뷰 작성 제한 수를 조회한다.\n\n권한: ADMIN\n\n요청 참고:\n본문·쿼리 없음\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_STORE_APRV`, `TB_RVW_RPT`, `TB_MBR_RSTR` / 바꾸는 테이블: 없음.\n- 트랜잭션: 없음.\n- 서버 검사: 공통 인증·역할, 제한 종료일시 비교.\n- 상태 변경 / VIEW·트리거: 없음.",
+        "description": "처리 대기 신청·신고 수와 활성 리뷰 작성 제한 수를 조회한다.\n\n권한: ADMIN\n\n요청 참고:\n본문·쿼리 없음\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_STORE`, `TB_STORE_APRV`, `TB_RVW_RPT`, `TB_MBR_RSTR` / 바꾸는 테이블: 없음.\n- 트랜잭션: 없음.\n- 서버 검사: 공통 인증·역할, 제한 종료일시 비교.\n- 상태 변경 / VIEW·트리거: 없음.",
         "responses": {
           "200": {
-            "description": "| 필드 | 타입 | 설명 (출처 컬럼 또는 계산식) |\n|---|---|---|\n| pendingApplications | integer | `TB_STORE_APRV.STORE_APRV_STTS='PENDING'` 건수 |\n| pendingReports | integer | `TB_RVW_RPT.RVW_RPT_STTS='PENDING'` 건수 |\n| activeRestrictions | integer | 공통 활성 조건에 해당하는 `TB_MBR_RSTR` 행 수 |",
+            "description": "| 필드 | 타입 | 설명 (출처 컬럼 또는 계산식) |\n|---|---|---|\n| pendingApplications | integer | `TB_STORE_APRV.STORE_APRV_STTS='PENDING'`이고 연결된 `TB_STORE.DEL_YN='N'`인 건수 |\n| pendingReports | integer | `TB_RVW_RPT.RVW_RPT_STTS='PENDING'` 건수 |\n| activeRestrictions | integer | 공통 활성 조건에 해당하는 `TB_MBR_RSTR` 행 수 |",
             "content": {
               "application/json": {
                 "schema": {
@@ -12298,7 +12319,7 @@
         ],
         "operationId": "X01",
         "summary": "X-01 입점 신청 목록",
-        "description": "PENDING은 신청 오래된 순, APPROVED·REJECTED는 처리 최신순으로 조회한다.\n\n권한: ADMIN\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_STORE`, `TB_STORE_APRV` / 바꾸는 테이블: 없음.\n- 트랜잭션: 없음.\n- 서버 검사: 공통 인증·역할, 신청→가게→사장 조인, 이전 반려 이력 존재 여부.\n- 상태 변경 / VIEW·트리거: 없음.",
+        "description": "삭제된 가게의 신청을 제외하고 PENDING은 신청 오래된 순, APPROVED·REJECTED는 처리 최신순으로 조회한다.\n\n권한: ADMIN\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_STORE`, `TB_STORE_APRV` / 바꾸는 테이블: 없음.\n- 트랜잭션: 없음.\n- 서버 검사: 공통 인증·역할, 신청→가게→사장 조인, `TB_STORE.DEL_YN='N'` 필터, 이전 반려 이력 존재 여부.\n- 상태 변경 / VIEW·트리거: 없음.",
         "parameters": [
           {
             "name": "status",
@@ -12586,7 +12607,7 @@
         ],
         "operationId": "X03",
         "summary": "X-03 입점 승인",
-        "description": "처리 대기 신청을 승인하며 가게 영업상태 PAUSED는 유지한다.\n\n권한: ADMIN\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_STORE_APRV`, `TB_STORE` / 바꾸는 테이블: `TB_STORE_APRV`, `TB_STORE`.\n- 트랜잭션: PENDING 검사 → 신청 조건부 UPDATE → 연결 가게 현재 승인 상태 UPDATE를 하나로 처리한다.\n- 서버 검사: 신청 존재·PENDING 확인, 연결 가게 확인; `WHERE STORE_APRV_STTS='PENDING'` 결과 행 수로 동시 처리 충돌을 판정한다.\n- 상태 변경 / VIEW·트리거: 신청 상태 APPROVED, `TB_STORE_APRV.PRCSR_MBR_ID`=로그인 관리자, `TB_STORE_APRV.PRCS_DTTM`=현재, `TB_STORE_APRV.RJCT_RSN_CN`=null; `TB_STORE.STORE_APRV_STTS='APPROVED'`. 영업상태는 변경하지 않는다. `TRG_STORE_APRV_MOD_DTTM`, `TRG_STORE_MOD_DTTM`이 수정일시를 기록한다. 승인 동기화는 트리거가 아닌 API 책임이다.",
+        "description": "처리 대기 신청을 승인하며 가게 영업상태 PAUSED는 유지한다.\n\n권한: ADMIN\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_STORE_APRV`, `TB_STORE` / 바꾸는 테이블: `TB_STORE_APRV`, `TB_STORE`.\n- 트랜잭션: PENDING 검사 → 신청 조건부 UPDATE → 연결 가게 현재 승인 상태 UPDATE를 하나로 처리한다.\n- 서버 검사: 신청 존재·PENDING 확인, 연결 가게 확인; `WHERE STORE_APRV_STTS='PENDING'` 결과 행 수로 동시 처리 충돌을 판정한다.\n- 상태 변경 / VIEW·트리거: 신청 상태 APPROVED, `TB_STORE_APRV.PRCSR_MBR_ID`=로그인 관리자, `TB_STORE_APRV.PRCS_DTTM`=현재, `TB_STORE_APRV.RJCT_RSN_CN`=null; `TB_STORE.STORE_APRV_STTS='APPROVED'`. 영업상태는 변경하지 않는다. `TRG_STORE_APRV_MOD_DTTM`, `TRG_STORE_MOD_DTTM`이 수정일시를 기록한다. 승인 동기화는 트리거가 아닌 API 책임이다.\n- `TRG_STORE_APRV_BLOCK_DELETED_STORE`는 삭제된 가게의 신청 상태 변경을 중단한다.",
         "parameters": [
           {
             "name": "applicationId",
@@ -12721,6 +12742,15 @@
                         "message": "신청이 PENDING 아님 또는 조건부 UPDATE 결과 0행"
                       }
                     }
+                  },
+                  "STORE_DELETED": {
+                    "value": {
+                      "success": false,
+                      "error": {
+                        "code": "STORE_DELETED",
+                        "message": "연결 가게가 삭제되어 신청 상태를 변경할 수 없음"
+                      }
+                    }
                   }
                 }
               }
@@ -12741,7 +12771,7 @@
         ],
         "operationId": "X04",
         "summary": "X-04 입점 반려",
-        "description": "처리 대기 신청을 필수 반려 사유와 함께 반려한다.\n\n권한: ADMIN\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_STORE_APRV`, `TB_STORE` / 바꾸는 테이블: `TB_STORE_APRV`, `TB_STORE`.\n- 트랜잭션: PENDING 검사 → 신청 조건부 UPDATE → 연결 가게 현재 승인 상태 UPDATE를 하나로 처리한다.\n- 서버 검사: 반려 사유, 신청 존재·PENDING, 연결 가게; `WHERE STORE_APRV_STTS='PENDING'` 결과 행 수로 동시 처리 충돌 판정.\n- 상태 변경 / VIEW·트리거: 신청 상태 REJECTED, `TB_STORE_APRV.PRCSR_MBR_ID`=로그인 관리자, `TB_STORE_APRV.PRCS_DTTM`=현재, `TB_STORE_APRV.RJCT_RSN_CN`=rejectReason; `TB_STORE.STORE_APRV_STTS='REJECTED'`. `TRG_STORE_APRV_MOD_DTTM`, `TRG_STORE_MOD_DTTM`이 수정일시를 기록한다. 승인 상태 동기화는 API가 수행한다.",
+        "description": "처리 대기 신청을 필수 반려 사유와 함께 반려한다.\n\n권한: ADMIN\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_STORE_APRV`, `TB_STORE` / 바꾸는 테이블: `TB_STORE_APRV`, `TB_STORE`.\n- 트랜잭션: PENDING 검사 → 신청 조건부 UPDATE → 연결 가게 현재 승인 상태 UPDATE를 하나로 처리한다.\n- 서버 검사: 반려 사유, 신청 존재·PENDING, 연결 가게; `WHERE STORE_APRV_STTS='PENDING'` 결과 행 수로 동시 처리 충돌 판정.\n- 상태 변경 / VIEW·트리거: 신청 상태 REJECTED, `TB_STORE_APRV.PRCSR_MBR_ID`=로그인 관리자, `TB_STORE_APRV.PRCS_DTTM`=현재, `TB_STORE_APRV.RJCT_RSN_CN`=rejectReason; `TB_STORE.STORE_APRV_STTS='REJECTED'`. `TRG_STORE_APRV_MOD_DTTM`, `TRG_STORE_MOD_DTTM`이 수정일시를 기록한다. 승인 상태 동기화는 API가 수행한다.\n- `TRG_STORE_APRV_BLOCK_DELETED_STORE`는 삭제된 가게의 신청 상태 변경을 중단한다.",
         "parameters": [
           {
             "name": "applicationId",
@@ -12895,6 +12925,15 @@
                         "message": "신청이 PENDING 아님 또는 조건부 UPDATE 결과 0행"
                       }
                     }
+                  },
+                  "STORE_DELETED": {
+                    "value": {
+                      "success": false,
+                      "error": {
+                        "code": "STORE_DELETED",
+                        "message": "연결 가게가 삭제되어 신청 상태를 변경할 수 없음"
+                      }
+                    }
                   }
                 }
               }
@@ -12915,7 +12954,7 @@
         ],
         "operationId": "X05",
         "summary": "X-05 리뷰 신고 목록",
-        "description": "신고 상태별 목록을 조회한다. PENDING은 신고 오래된 순이다.\n\n권한: ADMIN\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_STORE`, `TB_ORD`, `TB_RVW`, `TB_RVW_RPT` / 바꾸는 테이블: 없음.\n- 트랜잭션: 없음.\n- 서버 검사: 공통 인증·역할, 신고→리뷰→주문→가게 조인. 신고 근거인 숨김 리뷰도 조회한다.\n- 상태 변경 / VIEW·트리거: 없음. 주문은 가게 연결에만 사용하며 주문 상태를 조회하지 않는다.",
+        "description": "신고 상태별 목록을 조회한다. 작성자가 삭제한 리뷰의 신고도 포함한다. PENDING은 신고 오래된 순이다.\n\n권한: ADMIN\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_STORE`, `TB_ORD`, `TB_RVW`, `TB_RVW_RPT` / 바꾸는 테이블: 없음.\n- 트랜잭션: 없음.\n- 서버 검사: 공통 인증·역할, 신고→리뷰→주문→가게 조인. 신고 근거인 숨김·삭제 리뷰도 조회한다.\n- 상태 변경 / VIEW·트리거: 없음. 주문은 가게 연결에만 사용하며 주문 상태를 조회하지 않는다.",
         "parameters": [
           {
             "name": "status",
@@ -12929,7 +12968,7 @@
         ],
         "responses": {
           "200": {
-            "description": "| 필드 | 타입 | 설명 (출처 컬럼 또는 계산식) |\n|---|---|---|\n| [].reportId, [].reviewId | integer | `TB_RVW_RPT.RVW_RPT_ID`, `TB_RVW.RVW_ID` |\n| [].storeName | string | 리뷰→주문→가게의 `TB_STORE.STORE_NM` |\n| [].reason, [].reportedAt | string | `TB_RVW_RPT.RVW_RPT_RSN_CD`, `TB_RVW_RPT.REG_DTTM` |\n| [].rating | integer | `TB_RVW.RVW_RTNG` |\n| [].reviewPreview | string / null | `TB_RVW.RVW_CN`의 미리보기; 내용 없으면 null |",
+            "description": "| 필드 | 타입 | 설명 (출처 컬럼 또는 계산식) |\n|---|---|---|\n| [].reportId, [].reviewId | integer | `TB_RVW_RPT.RVW_RPT_ID`, `TB_RVW.RVW_ID` |\n| [].storeName | string | 리뷰→주문→가게의 `TB_STORE.STORE_NM` |\n| [].reason, [].reportedAt | string | `TB_RVW_RPT.RVW_RPT_RSN_CD`, `TB_RVW_RPT.REG_DTTM` |\n| [].rating | integer | `TB_RVW.RVW_RTNG` |\n| [].reviewPreview | string / null | `TB_RVW.RVW_CN`의 미리보기; 내용 없으면 null |\n| [].reviewDeleted | boolean | 작성자가 리뷰를 삭제했는지 (`TB_RVW.DEL_YN='Y'`) |",
             "content": {
               "application/json": {
                 "schema": {
@@ -12949,7 +12988,8 @@
                       "reason": "FALSE",
                       "reportedAt": "2026-11-17 22:00:00",
                       "rating": 1,
-                      "reviewPreview": "음식이 아예 안 왔어요..."
+                      "reviewPreview": "음식이 아예 안 왔어요...",
+                      "reviewDeleted": true
                     }
                   ]
                 }
@@ -13034,7 +13074,7 @@
         ],
         "operationId": "X06",
         "summary": "X-06 리뷰 신고 상세",
-        "description": "신고 내용, 리뷰, 실제 배달완료 여부, 작성자의 숨김 이력과 현재 제한을 확인한다.\n\n권한: ADMIN\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_ORD`, `TB_ORD_DTL`, `TB_DLVR`, `TB_RVW`, `TB_RVW_RPT`, `TB_MBR_RSTR` / 바꾸는 테이블: 만료 WAIT가 있으면 `TB_ORD`, 트리거로 `TB_PAY`, `TB_MBR`, `TB_PNT_TXN`, `TB_RIDER`.\n- 트랜잭션: 주문 상태 조회 전에 만료 WAIT 자동 취소를 트리거 연쇄 변경과 함께 처리하고 상세를 조회한다.\n- 서버 검사: 신고→리뷰→주문→작성자 연결, 제한 종료일시 비교, 작성자별 숨김 리뷰 집계. 배달은 LEFT JOIN한다.\n- 상태 변경 / VIEW·트리거: 조회 전 `TB_ORD.ORD_DTTM`+10분이 지난 WAIT를 SYSTEM·NO_RESPONSE로 CANCEL 처리한다. `ORD_STTS='CANCEL' UPDATE → TRG_ORD_CANCEL이 결제 취소·포인트 환불·라이더 IDLE 처리`. 상세 조회 자체는 상태를 바꾸지 않는다.",
+        "description": "신고 내용, 리뷰와 작성자 삭제 여부, 실제 배달완료 여부, 작성자의 숨김 이력과 현재 제한을 확인한다.\n\n권한: ADMIN\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_ORD`, `TB_ORD_DTL`, `TB_DLVR`, `TB_RVW`, `TB_RVW_RPT`, `TB_MBR_RSTR` / 바꾸는 테이블: 만료 WAIT가 있으면 `TB_ORD`, 트리거로 `TB_PAY`, `TB_MBR`, `TB_PNT_TXN`, `TB_RIDER`.\n- 트랜잭션: 주문 상태 조회 전에 만료 WAIT 자동 취소를 트리거 연쇄 변경과 함께 처리하고 상세를 조회한다.\n- 서버 검사: 신고→리뷰→주문→작성자 연결, 제한 종료일시 비교, 작성자별 숨김 리뷰 집계. 배달은 LEFT JOIN한다.\n- 상태 변경 / VIEW·트리거: 조회 전 `TB_ORD.ORD_DTTM`+10분이 지난 WAIT를 SYSTEM·NO_RESPONSE로 CANCEL 처리한다. `ORD_STTS='CANCEL' UPDATE → TRG_ORD_CANCEL이 결제 취소·포인트 환불·라이더 IDLE 처리`. 상세 조회 자체는 상태를 바꾸지 않는다.",
         "parameters": [
           {
             "name": "reportId",
@@ -13048,7 +13088,7 @@
         ],
         "responses": {
           "200": {
-            "description": "| 필드 | 타입 | 설명 (출처 컬럼 또는 계산식) |\n|---|---|---|\n| reportId, reason, content, reportedAt, status | integer / string | `TB_RVW_RPT.RVW_RPT_ID`, `TB_RVW_RPT.RVW_RPT_RSN_CD`, `TB_RVW_RPT.RVW_RPT_CN`, `TB_RVW_RPT.REG_DTTM`, `TB_RVW_RPT.RVW_RPT_STTS` |\n| review.reviewId, review.rating, review.content | integer / string / null | `TB_RVW.RVW_ID`, `TB_RVW.RVW_RTNG`, `TB_RVW.RVW_CN`(내용 null 가능) |\n| review.createdAt, review.hidden | string / boolean | `TB_RVW.REG_DTTM`, `TB_RVW.RVW_HDN_YN='Y'` 여부 |\n| order.orderId, order.status | integer / string | `TB_ORD.ORD_ID`, `TB_ORD.ORD_STTS` |\n| order.deliveredAt | string / null | `TB_DLVR.DLVR_CMPL_DTTM`; 배달 행·완료일시 없으면 null |\n| order.menus | string | `TB_ORD_DTL.ORD_MENU_NM`을 `TB_ORD_DTL.ORD_DTL_SEQ`순 결합 |\n| writer.memberId, writer.name | integer / string | 주문 작성자의 `TB_MBR.MBR_ID`, `TB_MBR.MBR_NM` |\n| writer.hiddenReviewCount | integer | 작성자의 주문에 연결되고 `TB_RVW.RVW_HDN_YN='Y'`인 리뷰 수 |\n| writer.restricted | boolean | 공통 활성 조건의 `TB_MBR_RSTR` 존재 여부 |",
+            "description": "| 필드 | 타입 | 설명 (출처 컬럼 또는 계산식) |\n|---|---|---|\n| reportId, reason, content, reportedAt, status | integer / string | `TB_RVW_RPT.RVW_RPT_ID`, `TB_RVW_RPT.RVW_RPT_RSN_CD`, `TB_RVW_RPT.RVW_RPT_CN`, `TB_RVW_RPT.REG_DTTM`, `TB_RVW_RPT.RVW_RPT_STTS` |\n| reviewDeleted | boolean | 작성자가 리뷰를 삭제했는지 (`TB_RVW.DEL_YN='Y'`) |\n| review.reviewId, review.rating, review.content | integer / string / null | `TB_RVW.RVW_ID`, `TB_RVW.RVW_RTNG`, `TB_RVW.RVW_CN`(내용 null 가능) |\n| review.createdAt, review.hidden | string / boolean | `TB_RVW.REG_DTTM`, `TB_RVW.RVW_HDN_YN='Y'` 여부 |\n| order.orderId, order.status | integer / string | `TB_ORD.ORD_ID`, `TB_ORD.ORD_STTS` |\n| order.deliveredAt | string / null | `TB_DLVR.DLVR_CMPL_DTTM`; 배달 행·완료일시 없으면 null |\n| order.menus | string | `TB_ORD_DTL.ORD_MENU_NM`을 `TB_ORD_DTL.ORD_DTL_SEQ`순 결합 |\n| writer.memberId, writer.name | integer / string | 주문 작성자의 `TB_MBR.MBR_ID`, `TB_MBR.MBR_NM` |\n| writer.hiddenReviewCount | integer | 작성자의 주문에 연결되고 `TB_RVW.RVW_HDN_YN='Y'`인 리뷰 수 |\n| writer.restricted | boolean | 공통 활성 조건의 `TB_MBR_RSTR` 존재 여부 |",
             "content": {
               "application/json": {
                 "schema": {
@@ -13066,6 +13106,7 @@
                     "content": "배달완료 사진 있음",
                     "reportedAt": "2026-11-17 22:00:00",
                     "status": "PENDING",
+                    "reviewDeleted": true,
                     "review": {
                       "reviewId": 702,
                       "rating": 1,
@@ -15520,7 +15561,7 @@
         ],
         "operationId": "D09",
         "summary": "D-09 배달 내역",
-        "description": "내가 완료한 배달만 페이지로 조회한다. 오늘 건수·배달팁 합계는 페이지와 무관한 전체 오늘 완료분이다.\n\n권한: RIDER\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_DLVR`, `TB_ORD`, `TB_STORE` / 바꾸는 테이블: 조회 전 만료 취소의 `TB_ORD`와 트리거 연쇄 대상 `TB_PAY`, `TB_MBR`, `TB_PNT_TXN`, `TB_RIDER`.\n- 트랜잭션: 조회 전 만료 취소와 트리거 처리는 하나의 쓰기 트랜잭션. items·totalCount·오늘 합계는 같은 읽기 범위에서 조회한다.\n- 서버 검사: `TB_DLVR.RIDER_MBR_ID=세션 회원 ID`이고 `TB_ORD.ORD_STTS='DONE'`인 배달만 포함. 취소·진행 중 배달 제외. 오늘 합계에도 같은 소유자·완료 조건을 적용하고 페이지 조건은 적용하지 않는다.\n- 상태 변경 / VIEW·트리거: `TB_DLVR.DLVR_CMPL_DTTM` 내림차순, `LIMIT size OFFSET (page-1)*size`. VIEW 사용 없음. 만료 취소는 공통 규칙의 `TRG_ORD_CANCEL` 처리.",
+        "description": "내가 완료한 배달만 페이지로 조회한다. 오늘·이번 주·이번 달 완료 건수와 배달팁 합계는 페이지와 무관하다.\n\n권한: RIDER\n\nDB 처리:\n- 읽는 테이블: `TB_MBR`, `TB_DLVR`, `TB_ORD`, `TB_STORE` / 바꾸는 테이블: 조회 전 만료 취소의 `TB_ORD`와 트리거 연쇄 대상 `TB_PAY`, `TB_MBR`, `TB_PNT_TXN`, `TB_RIDER`.\n- 트랜잭션: 조회 전 만료 취소와 트리거 처리는 하나의 쓰기 트랜잭션. `items`, `totalCount`, 오늘·주간·월간 합계는 같은 읽기 트랜잭션에서 조회한다.\n- 서버 검사: 로그인한 라이더의 배달만 포함한다. 목록과 집계 모두 `V_RIDER_DONE_DELIVERY`에서 주문 상태 `DONE` 및 배달 완료 일시를 확인한다. 집계에는 페이지 조건을 적용하지 않는다.\n- 상태 변경 / VIEW·트리거: `V_RIDER_DONE_DELIVERY`의 완료 일시와 배달 ID 내림차순으로 `LIMIT size OFFSET (page-1)*size`를 적용한다. 주간·월간 합계는 VIEW의 `WEEK_START_DT`, `MONTH` 기준으로 집계한다. 만료 취소는 공통 규칙의 `TRG_ORD_CANCEL` 처리.",
         "parameters": [
           {
             "name": "page",
@@ -15543,7 +15584,7 @@
         ],
         "responses": {
           "200": {
-            "description": "200. 내역이 없으면 `items: []`, `totalCount: 0`. 오늘 완료가 없으면 `todayCount: 0`, `todayTipSum: 0`.\n\n\n\n| 필드 | 타입 | 설명 (출처 컬럼 또는 계산식) |\n|---|---|---|\n| items | array | 해당 페이지 완료 배달 목록 |\n| items[].deliveryId | number | `TB_DLVR.DLVR_ID` |\n| items[].orderId | number | `TB_ORD.ORD_ID` |\n| items[].storeName | string | `TB_STORE.STORE_NM` |\n| items[].deliveryAddress | string | `TB_ORD.DLVR_ADDR` |\n| items[].deliveryTip | number | `TB_ORD.DLVR_TIP_AMT` |\n| items[].pickedUpAt | string | `TB_DLVR.PKUP_DTTM` |\n| items[].completedAt | string | `TB_DLVR.DLVR_CMPL_DTTM` |\n| page | number | 적용한 페이지 번호 |\n| size | number | 적용한 페이지 크기 |\n| totalCount | number | 페이지 제한 전 내 DONE 배달 전체 건수 |\n| todayCount | number | 내 DONE 배달 중 한국 시간 오늘 날짜에 `TB_DLVR.DLVR_CMPL_DTTM`이 속하는 전체 건수 |\n| todayTipSum | number | todayCount 대상의 `TB_ORD.DLVR_TIP_AMT` 합계. 없으면 0 |",
+            "description": "200. 내역이 없으면 `items: []`, `totalCount: 0`. 합산 기간에 완료한 배달이 없으면 해당 건수와 배달팁 합계는 0이다. 기간은 서버 현지 날짜 기준이며 시작일과 종료일을 모두 포함한다.\n\n\n\n| 필드 | 타입 | 설명 (출처 컬럼 또는 계산식) |\n|---|---|---|\n| items | array | 해당 페이지 완료 배달 목록 |\n| items[].deliveryId | number | `TB_DLVR.DLVR_ID` |\n| items[].orderId | number | `TB_ORD.ORD_ID` |\n| items[].storeName | string | `TB_STORE.STORE_NM` |\n| items[].deliveryAddress | string | `TB_ORD.DLVR_ADDR` |\n| items[].deliveryTip | number | `TB_ORD.DLVR_TIP_AMT` |\n| items[].pickedUpAt | string | `TB_DLVR.PKUP_DTTM` |\n| items[].completedAt | string | `TB_DLVR.DLVR_CMPL_DTTM` |\n| page | number | 적용한 페이지 번호 |\n| size | number | 적용한 페이지 크기 |\n| totalCount | number | 페이지 제한 전 내 DONE 배달 전체 건수 |\n| todayCount | number | 내 완료 배달 중 `TB_DLVR.DLVR_CMPL_DTTM`이 서버 현지 날짜 기준으로 오늘인 전체 건수 |\n| todayTipSum | number | todayCount 대상의 `TB_ORD.DLVR_TIP_AMT` 합계. 없으면 0 |\n| summary.thisWeek.from | string | 이번 주 월요일 (`YYYY-MM-DD`) |\n| summary.thisWeek.to | string | 이번 주 일요일 (`YYYY-MM-DD`) |\n| summary.thisWeek.count | number | 이번 주에 완료한 전체 배달 건수 |\n| summary.thisWeek.tipAmount | number | 이번 주 배달팁 합계(원) |\n| summary.thisMonth.from | string | 이번 달 1일 (`YYYY-MM-DD`) |\n| summary.thisMonth.to | string | 이번 달 말일 (`YYYY-MM-DD`) |\n| summary.thisMonth.count | number | 이번 달에 완료한 전체 배달 건수 |\n| summary.thisMonth.tipAmount | number | 이번 달 배달팁 합계(원) |",
             "content": {
               "application/json": {
                 "schema": {
@@ -15579,7 +15620,21 @@
                     "size": 20,
                     "totalCount": 37,
                     "todayCount": 5,
-                    "todayTipSum": 15000
+                    "todayTipSum": 15000,
+                    "summary": {
+                      "thisWeek": {
+                        "from": "2026-11-23",
+                        "to": "2026-11-29",
+                        "count": 8,
+                        "tipAmount": 23000
+                      },
+                      "thisMonth": {
+                        "from": "2026-11-01",
+                        "to": "2026-11-30",
+                        "count": 23,
+                        "tipAmount": 64000
+                      }
+                    }
                   }
                 }
               }
