@@ -9,6 +9,7 @@
     "start": "next start",
     "start:web": "next start",
     "lint": "eslint",
+    "test": "node --test lib/auth/session.test.mjs",
     "setup:server": "npm --prefix server ci",
     "dev:server": "npm --prefix server run dev",
     "start:server": "npm --prefix server run start",

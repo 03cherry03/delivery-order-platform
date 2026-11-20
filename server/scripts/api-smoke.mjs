@@ -1,7 +1,7 @@
 // Production authentication requires SESSION_SECRET; give the child its own key without changing shared configuration.
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 import { once } from "node:events";
 import { fileURLToPath } from "node:url";
 
@@ -369,6 +369,86 @@ async function mainFlow() {
     const menus = expectOk(await api("GET", `/api/owner/stores/${storeId}/sales/menus?${range}`, { as: owner }));
     assert.equal(menus.reduce((sum, menu) => sum + menu.salesAmount, 0), sales.summary.salesAmount);
   });
+  const reviewPath = `/api/customer/reviews/${review.reviewId}`;
+  const edited = await step("C-25 customer edits review", async () => {
+    const content = `Smoke edited review ${runId}`;
+    const updated = expectOk(await api("PATCH", reviewPath, { as: "shopper", body: { rating: 4, content } }));
+    assert.equal(updated.reviewId, review.reviewId);
+    assert.equal(updated.rating, 4);
+    assert.equal(updated.content, content);
+    return updated;
+  });
+  const reportsPath = "/api/admin/review-reports";
+  const report = await step("R-05 owner reports review", async () => {
+    const result = expectOk(await api("POST", `/api/owner/stores/${storeId}/reviews/${review.reviewId}/report`, {
+      as: owner, body: { reason: "ETC", content: `Smoke report ${runId}` },
+    }), 201);
+    assert.ok(result.reportId > 0);
+    assert.equal(result.status, "PENDING");
+    const detail = expectOk(await api("GET", `${reportsPath}/${result.reportId}`, { as: "admin" }));
+    assert.equal(detail.reviewDeleted, false);
+    return result;
+  });
+  await step("C-26 customer deletes reported review", async () => {
+    assert.deepEqual(expectOk(await api("DELETE", reviewPath, { as: "shopper" })), { reviewId: review.reviewId, deleted: true });
+  });
+  await step("X-05/X-06 pending report retains the deleted review", async () => {
+    const reports = expectOk(await api("GET", `${reportsPath}?status=PENDING`, { as: "admin" }));
+    const item = reports.find((item) => item.reportId === report.reportId);
+    assert.ok(item, "report remains in pending list");
+    assert.equal(item.reviewId, review.reviewId);
+    assert.equal(item.reviewDeleted, true);
+    const detail = expectOk(await api("GET", `${reportsPath}/${report.reportId}`, { as: "admin" }));
+    assert.equal(detail.status, "PENDING");
+    assert.equal(detail.reviewDeleted, true);
+    assert.equal(detail.review.reviewId, review.reviewId);
+    assert.equal(detail.review.content, edited.content);
+  });
+}
+
+async function riderHistorySummary() {
+  await step("D-09 rider weekly/monthly tips include completed delivery regardless of page", async () => {
+    const path = "/api/rider/deliveries/history?size=1";
+    // 서버와 같은 현지 시간으로 오늘 날짜를 독립적으로 계산한다 (자정 경계 대비 조회 전후 둘 다).
+    const localDay = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const startDay = localDay(new Date());
+    const history = expectOk(await api("GET", path, { as: "courier" }));
+    assert.equal(history.totalCount, 1);
+    assert.equal(history.items.length, 1);
+    const [delivery] = history.items;
+    const order = expectOk(await api("GET", `/api/customer/orders/${delivery.orderId}`, { as: "shopper" }));
+    assert.equal(delivery.deliveryTip, order.deliveryTip);
+    assert.equal(delivery.completedAt, order.deliveredAt);
+
+    const emptyPage = expectOk(await api("GET", `${path}&page=2`, { as: "courier" }));
+    const endDay = localDay(new Date());
+    assert.equal(emptyPage.totalCount, 1);
+    assert.deepEqual(emptyPage.items, []);
+    const day = delivery.completedAt.slice(0, 10);
+    const weekOf = (d) => {
+      const date = new Date(`${d}T00:00:00Z`);
+      date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7)); // 월요일 시작
+      const from = date.toISOString().slice(0, 10);
+      date.setUTCDate(date.getUTCDate() + 6);
+      return { from, to: date.toISOString().slice(0, 10) };
+    };
+    const monthOf = (d) => {
+      const date = new Date(`${d.slice(0, 7)}-01T00:00:00Z`);
+      const from = date.toISOString().slice(0, 10);
+      date.setUTCMonth(date.getUTCMonth() + 1, 0);
+      return { from, to: date.toISOString().slice(0, 10) };
+    };
+    for (const { summary: { thisWeek, thisMonth } } of [history, emptyPage]) {
+      for (const [period, of] of [[thisWeek, weekOf], [thisMonth, monthOf]]) {
+        const expected = [of(startDay), of(endDay)];
+        assert.ok(expected.some((e) => e.from === period.from && e.to === period.to), `period ${period.from}~${period.to} is the current one`);
+        // 완료일이 그 기간에 속하면 1건, 완료 뒤 자정을 넘겨 기간이 바뀌었으면 0건이다.
+        const count = Number(period.from <= day && day <= period.to);
+        assert.equal(period.count, count);
+        assert.equal(period.tipAmount, count * order.deliveryTip);
+      }
+    }
+  });
 }
 
 async function points() {
@@ -507,6 +587,66 @@ async function withdrawnEmail() {
   });
 }
 
+async function loginThrottle() {
+  const email = `smoke-throttle-${runId}@test.com`;
+  const wrongLogin = (email) => api("POST", "/api/auth/login", { body: { email, password: "wrong-password" } });
+  await step("A-01 successful login after four failures resets the threshold", async () => {
+    const body = { role: "CUSTOMER", email, password, name: "Smoke throttle", tel: "010-1234-5678" };
+    const created = expectOk(await api("POST", "/api/auth/signup", { body }), 201);
+    for (let i = 0; i < 4; i++) expectFail(await wrongLogin(email), 401, "LOGIN_FAILED");
+    assert.equal((await login("throttle", email, "CUSTOMER")).memberId, created.memberId);
+  });
+  await step("A-01 fifth failure returns 401 and correct password then returns 429", async () => {
+    expectFail(await wrongLogin(` ${email.toUpperCase()} `), 401, "LOGIN_FAILED");
+    for (let i = 0; i < 4; i++) expectFail(await wrongLogin(email), 401, "LOGIN_FAILED");
+    const locked = await api("POST", "/api/auth/login", { body: { email, password } });
+    assert.match(expectFail(locked, 429, "LOGIN_LOCKED").message, /\d+분 후/);
+    const retryAfter = Number(locked.headers.get("retry-after"));
+    assert.ok(Number.isInteger(retryAfter) && retryAfter > 0 && retryAfter <= 600);
+    assert.equal(locked.setCookies.length, 0);
+  });
+}
+
+async function withdrawnOwnerApplication() {
+  const email = `smoke-withdraw-owner-${runId}@test.com`;
+  const bizDigits = String(randomInt(10_000_000_000)).padStart(10, "0");
+  const admin = { as: "admin" };
+  const pendingPath = "/api/admin/store-applications?status=PENDING";
+  const summary = async () => expectOk(await api("GET", "/api/admin/summary", admin)).pendingApplications;
+  const { applicationId, storeId, before } = await step("A-06/X-01 owner signup creates a pending application", async () => {
+    const before = await summary();
+    const created = expectOk(await api("POST", "/api/auth/signup", {
+      body: { role: "OWNER", email, password, name: "Smoke owner withdrawal", tel: "010-1234-5678",
+        store: { storeName: "Smoke withdrawal store", categoryCode: "KOREAN",
+          bizNo: `${bizDigits.slice(0, 3)}-${bizDigits.slice(3, 5)}-${bizDigits.slice(5)}`,
+          telNo: "02-000-0000", address: address.address, lat: address.lat, lng: address.lng,
+          minOrderAmount: 10000, deliveryTip: 2000, cookMinutes: 15,
+          hours: [{ dayOfWeek: 1, open: "08:00", close: "24:00" }] },
+      },
+    }), 201);
+    assert.equal(created.approvalStatus, "PENDING");
+    const application = expectOk(await api("GET", pendingPath, admin)).find((item) => item.storeId === created.storeId);
+    assert.ok(application, "new application appears before withdrawal");
+    assert.equal(await summary(), before + 1);
+    return { ...application, before };
+  });
+  await step("A-07/X-00/X-01 withdrawal removes application from pending list and count", async () => {
+    const as = "withdraw-owner";
+    await login(as, email, "OWNER");
+    assert.ok(expectOk(await api("DELETE", "/api/auth/me", { as, body: { password } })).withdrawnAt);
+    assert.ok(!expectOk(await api("GET", pendingPath, admin)).some((item) => item.storeId === storeId));
+    assert.equal(await summary(), before);
+  });
+  await step("X-03/X-04 withdrawn owner's application cannot be processed", async () => {
+    const path = `/api/admin/store-applications/${applicationId}`;
+    expectFail(await api("POST", `${path}/approve`, admin), 409, "STORE_DELETED");
+    expectFail(await api("POST", `${path}/reject`, { ...admin, body: { rejectReason: "Smoke withdrawal" } }), 409, "STORE_DELETED");
+    const detail = expectOk(await api("GET", path, admin));
+    assert.equal(detail.storeId, storeId);
+    assert.equal(detail.approvalStatus, "PENDING");
+  });
+}
+
 function killServer(signal) {
   if (!server?.pid) return;
   try { process.kill(-server.pid, signal); }
@@ -573,10 +713,10 @@ for (const [signal, code] of [["SIGINT", 130], ["SIGTERM", 143], ["SIGHUP", 129]
 
 try {
   await step(external ? `using existing server ${base.origin}` : "initialize database and start production server", startServer);
-  for (const scenario of [authentication, permissions, validation, mainFlow, cancellationAndRefund, dispatchedCancel, expiry, withdrawnEmail, cors]) {
+  for (const scenario of [authentication, permissions, validation, mainFlow, riderHistorySummary, cancellationAndRefund, dispatchedCancel, expiry, withdrawnEmail, cors, loginThrottle, withdrawnOwnerApplication]) {
     await scenario();
   }
-  console.log("API smoke passed (9 scenarios)");
+  console.log("API smoke passed (12 scenarios)");
 } catch (error) {
   console.error(`not ok - ${currentStep}\n${error.message}\nRequest: ${lastRequest}\nLast response body:\n${lastResponse}`);
   process.exitCode = 1;
