@@ -25,7 +25,7 @@ X-00은 관리자 메인 화면과 메뉴 배지에 사용하는 **관리자 요
 ```
 | 필드 | 타입 | 설명 (출처 컬럼 또는 계산식) |
 |---|---|---|
-| pendingApplications | integer | `TB_STORE_APRV.STORE_APRV_STTS='PENDING'` 건수 |
+| pendingApplications | integer | `TB_STORE_APRV.STORE_APRV_STTS='PENDING'`이고 연결된 `TB_STORE.DEL_YN='N'`인 건수 |
 | pendingReports | integer | `TB_RVW_RPT.RVW_RPT_STTS='PENDING'` 건수 |
 | activeRestrictions | integer | 공통 활성 조건에 해당하는 `TB_MBR_RSTR` 행 수 |
 
@@ -36,7 +36,7 @@ X-00은 관리자 메인 화면과 메뉴 배지에 사용하는 **관리자 요
 | 403 | FORBIDDEN | ADMIN 아님 |
 
 ### DB 처리
-- 읽는 테이블: `TB_MBR`, `TB_STORE_APRV`, `TB_RVW_RPT`, `TB_MBR_RSTR` / 바꾸는 테이블: 없음.
+- 읽는 테이블: `TB_MBR`, `TB_STORE`, `TB_STORE_APRV`, `TB_RVW_RPT`, `TB_MBR_RSTR` / 바꾸는 테이블: 없음.
 - 트랜잭션: 없음.
 - 서버 검사: 공통 인증·역할, 제한 종료일시 비교.
 - 상태 변경 / VIEW·트리거: 없음.
@@ -44,7 +44,7 @@ X-00은 관리자 메인 화면과 메뉴 배지에 사용하는 **관리자 요
 ## X-01 입점 신청 목록
 - method/path: `GET /api/admin/store-applications`
 - 권한: ADMIN
-- 설명: PENDING은 신청 오래된 순, APPROVED·REJECTED는 처리 최신순으로 조회한다.
+- 설명: 삭제된 가게의 신청을 제외하고 PENDING은 신청 오래된 순, APPROVED·REJECTED는 처리 최신순으로 조회한다.
 
 ### 요청
 | 위치 | 필드 | 타입 | 필수 | 제약·설명 |
@@ -73,7 +73,7 @@ X-00은 관리자 메인 화면과 메뉴 배지에 사용하는 **관리자 요
 ### DB 처리
 - 읽는 테이블: `TB_MBR`, `TB_STORE`, `TB_STORE_APRV` / 바꾸는 테이블: 없음.
 - 트랜잭션: 없음.
-- 서버 검사: 공통 인증·역할, 신청→가게→사장 조인, 이전 반려 이력 존재 여부.
+- 서버 검사: 공통 인증·역할, 신청→가게→사장 조인, `TB_STORE.DEL_YN='N'` 필터, 이전 반려 이력 존재 여부.
 - 상태 변경 / VIEW·트리거: 없음.
 
 ## X-02 입점 신청 상세
@@ -148,12 +148,14 @@ X-00은 관리자 메인 화면과 메뉴 배지에 사용하는 **관리자 요
 | 403 | FORBIDDEN | ADMIN 아님 |
 | 404 | NOT_FOUND | 신청 없음 |
 | 409 | ALREADY_PROCESSED | 신청이 PENDING 아님 또는 조건부 UPDATE 결과 0행 |
+| 409 | STORE_DELETED | 연결 가게가 삭제되어 신청 상태를 변경할 수 없음 |
 
 ### DB 처리
 - 읽는 테이블: `TB_MBR`, `TB_STORE_APRV`, `TB_STORE` / 바꾸는 테이블: `TB_STORE_APRV`, `TB_STORE`.
 - 트랜잭션: PENDING 검사 → 신청 조건부 UPDATE → 연결 가게 현재 승인 상태 UPDATE를 하나로 처리한다.
 - 서버 검사: 신청 존재·PENDING 확인, 연결 가게 확인; `WHERE STORE_APRV_STTS='PENDING'` 결과 행 수로 동시 처리 충돌을 판정한다.
 - 상태 변경 / VIEW·트리거: 신청 상태 APPROVED, `TB_STORE_APRV.PRCSR_MBR_ID`=로그인 관리자, `TB_STORE_APRV.PRCS_DTTM`=현재, `TB_STORE_APRV.RJCT_RSN_CN`=null; `TB_STORE.STORE_APRV_STTS='APPROVED'`. 영업상태는 변경하지 않는다. `TRG_STORE_APRV_MOD_DTTM`, `TRG_STORE_MOD_DTTM`이 수정일시를 기록한다. 승인 동기화는 트리거가 아닌 API 책임이다.
+- `TRG_STORE_APRV_BLOCK_DELETED_STORE`는 삭제된 가게의 신청 상태 변경을 중단한다.
 
 ## X-04 입점 반려
 - method/path: `POST /api/admin/store-applications/{applicationId}/reject`
@@ -182,17 +184,19 @@ X-00은 관리자 메인 화면과 메뉴 배지에 사용하는 **관리자 요
 | 403 | FORBIDDEN | ADMIN 아님 |
 | 404 | NOT_FOUND | 신청 없음 |
 | 409 | ALREADY_PROCESSED | 신청이 PENDING 아님 또는 조건부 UPDATE 결과 0행 |
+| 409 | STORE_DELETED | 연결 가게가 삭제되어 신청 상태를 변경할 수 없음 |
 
 ### DB 처리
 - 읽는 테이블: `TB_MBR`, `TB_STORE_APRV`, `TB_STORE` / 바꾸는 테이블: `TB_STORE_APRV`, `TB_STORE`.
 - 트랜잭션: PENDING 검사 → 신청 조건부 UPDATE → 연결 가게 현재 승인 상태 UPDATE를 하나로 처리한다.
 - 서버 검사: 반려 사유, 신청 존재·PENDING, 연결 가게; `WHERE STORE_APRV_STTS='PENDING'` 결과 행 수로 동시 처리 충돌 판정.
 - 상태 변경 / VIEW·트리거: 신청 상태 REJECTED, `TB_STORE_APRV.PRCSR_MBR_ID`=로그인 관리자, `TB_STORE_APRV.PRCS_DTTM`=현재, `TB_STORE_APRV.RJCT_RSN_CN`=rejectReason; `TB_STORE.STORE_APRV_STTS='REJECTED'`. `TRG_STORE_APRV_MOD_DTTM`, `TRG_STORE_MOD_DTTM`이 수정일시를 기록한다. 승인 상태 동기화는 API가 수행한다.
+- `TRG_STORE_APRV_BLOCK_DELETED_STORE`는 삭제된 가게의 신청 상태 변경을 중단한다.
 
 ## X-05 리뷰 신고 목록
 - method/path: `GET /api/admin/review-reports`
 - 권한: ADMIN
-- 설명: 신고 상태별 목록을 조회한다. PENDING은 신고 오래된 순이다.
+- 설명: 신고 상태별 목록을 조회한다. 작성자가 삭제한 리뷰의 신고도 포함한다. PENDING은 신고 오래된 순이다.
 
 ### 요청
 | 위치 | 필드 | 타입 | 필수 | 제약·설명 |
@@ -201,7 +205,7 @@ X-00은 관리자 메인 화면과 메뉴 배지에 사용하는 **관리자 요
 
 ### 응답
 ```json
-{"success":true,"data":[{"reportId":80,"reviewId":702,"storeName":"연세치킨 신촌점","reason":"FALSE","reportedAt":"2026-11-17 22:00:00","rating":1,"reviewPreview":"음식이 아예 안 왔어요..."}]}
+{"success":true,"data":[{"reportId":80,"reviewId":702,"storeName":"연세치킨 신촌점","reason":"FALSE","reportedAt":"2026-11-17 22:00:00","rating":1,"reviewPreview":"음식이 아예 안 왔어요...","reviewDeleted":true}]}
 ```
 | 필드 | 타입 | 설명 (출처 컬럼 또는 계산식) |
 |---|---|---|
@@ -210,6 +214,7 @@ X-00은 관리자 메인 화면과 메뉴 배지에 사용하는 **관리자 요
 | [].reason, [].reportedAt | string | `TB_RVW_RPT.RVW_RPT_RSN_CD`, `TB_RVW_RPT.REG_DTTM` |
 | [].rating | integer | `TB_RVW.RVW_RTNG` |
 | [].reviewPreview | string / null | `TB_RVW.RVW_CN`의 미리보기; 내용 없으면 null |
+| [].reviewDeleted | boolean | 작성자가 리뷰를 삭제했는지 (`TB_RVW.DEL_YN='Y'`) |
 
 ### 오류
 | HTTP | code | 발생 조건 |
@@ -221,13 +226,13 @@ X-00은 관리자 메인 화면과 메뉴 배지에 사용하는 **관리자 요
 ### DB 처리
 - 읽는 테이블: `TB_MBR`, `TB_STORE`, `TB_ORD`, `TB_RVW`, `TB_RVW_RPT` / 바꾸는 테이블: 없음.
 - 트랜잭션: 없음.
-- 서버 검사: 공통 인증·역할, 신고→리뷰→주문→가게 조인. 신고 근거인 숨김 리뷰도 조회한다.
+- 서버 검사: 공통 인증·역할, 신고→리뷰→주문→가게 조인. 신고 근거인 숨김·삭제 리뷰도 조회한다.
 - 상태 변경 / VIEW·트리거: 없음. 주문은 가게 연결에만 사용하며 주문 상태를 조회하지 않는다.
 
 ## X-06 리뷰 신고 상세
 - method/path: `GET /api/admin/review-reports/{reportId}`
 - 권한: ADMIN
-- 설명: 신고 내용, 리뷰, 실제 배달완료 여부, 작성자의 숨김 이력과 현재 제한을 확인한다.
+- 설명: 신고 내용, 리뷰와 작성자 삭제 여부, 실제 배달완료 여부, 작성자의 숨김 이력과 현재 제한을 확인한다.
 
 ### 요청
 | 위치 | 필드 | 타입 | 필수 | 제약·설명 |
@@ -236,11 +241,12 @@ X-00은 관리자 메인 화면과 메뉴 배지에 사용하는 **관리자 요
 
 ### 응답
 ```json
-{"success":true,"data":{"reportId":80,"reason":"FALSE","content":"배달완료 사진 있음","reportedAt":"2026-11-17 22:00:00","status":"PENDING","review":{"reviewId":702,"rating":1,"content":"음식이 아예 안 왔어요","createdAt":"2026-11-17 21:30:00","hidden":false},"order":{"orderId":2991,"status":"DONE","deliveredAt":"2026-11-17 19:40:00","menus":"양념치킨"},"writer":{"memberId":7,"name":"박고객","hiddenReviewCount":2,"restricted":false}}}
+{"success":true,"data":{"reportId":80,"reason":"FALSE","content":"배달완료 사진 있음","reportedAt":"2026-11-17 22:00:00","status":"PENDING","reviewDeleted":true,"review":{"reviewId":702,"rating":1,"content":"음식이 아예 안 왔어요","createdAt":"2026-11-17 21:30:00","hidden":false},"order":{"orderId":2991,"status":"DONE","deliveredAt":"2026-11-17 19:40:00","menus":"양념치킨"},"writer":{"memberId":7,"name":"박고객","hiddenReviewCount":2,"restricted":false}}}
 ```
 | 필드 | 타입 | 설명 (출처 컬럼 또는 계산식) |
 |---|---|---|
 | reportId, reason, content, reportedAt, status | integer / string | `TB_RVW_RPT.RVW_RPT_ID`, `TB_RVW_RPT.RVW_RPT_RSN_CD`, `TB_RVW_RPT.RVW_RPT_CN`, `TB_RVW_RPT.REG_DTTM`, `TB_RVW_RPT.RVW_RPT_STTS` |
+| reviewDeleted | boolean | 작성자가 리뷰를 삭제했는지 (`TB_RVW.DEL_YN='Y'`) |
 | review.reviewId, review.rating, review.content | integer / string / null | `TB_RVW.RVW_ID`, `TB_RVW.RVW_RTNG`, `TB_RVW.RVW_CN`(내용 null 가능) |
 | review.createdAt, review.hidden | string / boolean | `TB_RVW.REG_DTTM`, `TB_RVW.RVW_HDN_YN='Y'` 여부 |
 | order.orderId, order.status | integer / string | `TB_ORD.ORD_ID`, `TB_ORD.ORD_STTS` |
