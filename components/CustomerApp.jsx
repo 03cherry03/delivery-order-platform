@@ -3,9 +3,11 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {loginUrl} from '@/lib/auth/session';
 import {BRAND,brandParts} from '@/lib/brand';
+import {PAY_METHOD} from '@/lib/owner/codes';
 const [BRAND_HEAD,BRAND_TAIL]=brandParts(BRAND.customer);
 const API='/api/customer';
 const PAGE_SIZE=20; // customer.md: page >= 1, size 1~100, default 20
+const EMPTY_STORE_PAGE={items:[],page:1,size:PAGE_SIZE,totalCount:0};
 const cash=n=>Number(n??0).toLocaleString('ko-KR')+'원';
 const statusLabel={WAIT:'주문 대기',COOKING:'조리 중',READY:'조리 완료 · 픽업 대기',DELIVERING:'배달 중',DONE:'배달 완료',CANCEL:'주문 취소'};
 const operStatusLabel={OPEN:'영업중',CLOSED:'영업 종료',PAUSED:'일시 중지'};
@@ -36,6 +38,7 @@ async function api(path, method = 'GET', body) {
 
   return x.data;
 }
+const fetchOrder=orderId=>api(`${API}/orders/${orderId}`);
 function IconTile({children}){return <span className="icon-tile">{children}</span>}
 function Empty({icon='🥡',title,description,action}){return <div className="empty"><div className="empty-figure">{icon}</div><h3>{title}</h3><p>{description}</p>{action}</div>}
 function PriceRow({name,value,strong=false}){return <div className={'price-row '+(strong?'strong':'')}><span>{name}</span><b>{cash(value)}</b></div>}
@@ -68,10 +71,9 @@ function Btn({children,onClick,secondary=false,disabled=false,className=''}){ret
 
 export default function CustomerApp({initialMode='login'}){
  const [user,setUser]=useState(undefined),[tab,setTab]=useState('home'),[error,setError]=useState(''),[notice,setNotice]=useState('');
- const [addresses,setAddresses]=useState([]),[addressId,setAddressId]=useState(null),[stores,setStores]=useState([]),[store,setStore]=useState(null),[menus,setMenus]=useState([]),[storeReviews,setStoreReviews]=useState([]);
- const [storePage,setStorePage]=useState({page:1,size:PAGE_SIZE,totalCount:0});
+ const [addresses,setAddresses]=useState([]),[addressId,setAddressId]=useState(null),[store,setStore]=useState(null),[menus,setMenus]=useState([]),[storeReviews,setStoreReviews]=useState([]);
+ const [storeList,setStoreList]=useState(null);
  const [storeReviewsPage,setStoreReviewsPage]=useState({page:1,size:PAGE_SIZE,totalCount:0});
- const [storeLoading,setStoreLoading]=useState(false);
  const [cart,setCart]=useState(null),[orders,setOrders]=useState([]),[order,setOrder]=useState(null),[points,setPoints]=useState(null),[reviews,setReviews]=useState([]);
   const emptyPage=()=>({page:1,size:PAGE_SIZE,totalCount:0});
   const [orderPage,setOrderPage]=useState(emptyPage),[reviewPage,setReviewPage]=useState(emptyPage);
@@ -87,6 +89,7 @@ export default function CustomerApp({initialMode='login'}){
   const listGeneration=useRef(0); // refresh 발생 시 진행 중인 더보기 응답 무효화
   const storeListGeneration=useRef(0); // 주소·검색·정렬 변경 시 이전 가게 목록 응답 무효화
   const publicReviewGeneration=useRef(0); // 다른 가게를 열면 이전 공개 리뷰 응답 무효화
+ const orderRevision=useRef(0);
   const moreInFlight=useRef({orders:false,reviews:false,points:false,stores:false,storeReviews:false});
  const [rating,setRating]=useState(5),[reviewContent,setReviewContent]=useState('');
  const alertError=(e)=>{setNotice('');setError(e.message??'오류가 발생했습니다.');};
@@ -134,33 +137,59 @@ export default function CustomerApp({initialMode='login'}){
   if(user===null&&authMode==='login')router.replace(loginQuery.current===null?loginUrl('/customer'):'/login'+loginQuery.current);
   else if(user&&user.role!=='CUSTOMER')router.replace(loginUrl('/customer'));
  },[user,authMode,router]);
- useEffect(()=>{
-  let active=true;
-  ++storeListGeneration.current;
-  setStores([]);setStorePage({page:1,size:PAGE_SIZE,totalCount:0});
-  if(!user||user.role!=='CUSTOMER'||!addressId){setStoreLoading(false);return()=>{active=false;};}
-  setStoreLoading(true);
+ const storeQuery=useMemo(()=>{
+  if(user?.role!=='CUSTOMER'||!addressId)return null;
   const params=new URLSearchParams({addressId:String(addressId),sort,page:'1',size:String(PAGE_SIZE)});
   if(category!=='ALL')params.set('categoryCode',category);if(search.trim())params.set('keyword',search.trim());
-  api(API+'/stores?'+params).then(x=>{
-   if(!active)return;
-   setStores(x.items);setStorePage({page:x.page,size:x.size,totalCount:x.totalCount});
-  }).catch(e=>{if(active)alertError(e);}).finally(()=>{if(active)setStoreLoading(false);});
-  return()=>{active=false;};
+  return params;
  },[user,addressId,category,sort,search]);
+ const storePage=storeList?.query===storeQuery?storeList.data:EMPTY_STORE_PAGE;
+ const stores=storePage.items;
+ const storeLoading=!!storeQuery&&storeList?.query!==storeQuery;
+ useEffect(()=>{
+  ++storeListGeneration.current;
+  if(!storeQuery)return;
+  let active=true;
+  api(API+'/stores?'+storeQuery).then(data=>{
+   if(active)setStoreList({query:storeQuery,data});
+  }).catch(e=>{
+   if(!active)return;
+   setStoreList({query:storeQuery,data:EMPTY_STORE_PAGE});
+   alertError(e);
+  });
+  return()=>{active=false;};
+ },[storeQuery]);
+ const pollingOrderId=tab==='order'&&order?.status!=='DONE'&&order?.status!=='CANCEL'?order?.orderId:null;
+ useEffect(()=>{
+  if(pollingOrderId==null)return;
+  let active=true,polling=false;
+  const t=setInterval(async()=>{
+   if(polling)return;
+   polling=true;
+   const revision=orderRevision.current;
+   try{
+    const next=await fetchOrder(pollingOrderId);
+    if(active&&revision===orderRevision.current){
+     setOrder(current=>current?.orderId===pollingOrderId?next:current);
+    }
+   }catch{
+    // 일시적인 조회 실패는 현재 상세를 유지하고 다음 주기에 다시 시도한다.
+   }finally{polling=false;}
+  },10000);
+  return()=>{active=false;clearInterval(t);};
+ },[pollingOrderId]);
  const activeAddress=addresses.find(a=>a.addressId===addressId);
  const loadMoreStores=()=>{
-  if(busy||moreInFlight.current.stores||!addressId||stores.length>=storePage.totalCount)return;
+  if(busy||moreInFlight.current.stores||!storeQuery||stores.length>=storePage.totalCount)return;
   const generation=storeListGeneration.current,epoch=sessionEpoch.current;
-  const params=new URLSearchParams({addressId:String(addressId),sort,page:String(storePage.page+1),size:String(storePage.size)});
-  if(category!=='ALL')params.set('categoryCode',category);if(search.trim())params.set('keyword',search.trim());
+  const params=new URLSearchParams(storeQuery);
+  params.set('page',String(storePage.page+1));
   moreInFlight.current.stores=true;
   execute(async()=>{
    try{
     const next=await api(API+'/stores?'+params);
     if(generation!==storeListGeneration.current||epoch!==sessionEpoch.current)return;
-    setStores(previous=>appendUnique(previous,next.items,'storeId'));
-    setStorePage({page:next.page,size:next.size,totalCount:next.totalCount});
+    setStoreList({query:storeQuery,data:{...next,items:appendUnique(stores,next.items,'storeId')}});
    }catch(e){if(generation===storeListGeneration.current&&epoch===sessionEpoch.current)throw e;}
    finally{moreInFlight.current.stores=false;}
   });
@@ -222,16 +251,35 @@ await api(API+'/cart/items','POST',{
  const removeCart=(item)=>execute(async()=>{await api(API+'/cart/items/'+item.cartItemId,'DELETE');setCart(await api(API+'/cart'));});
  const startCheckout=()=>execute(async()=>{const p=await api(API+'/orders/preview','POST',{addressId,payMethod});setPreview(p);setTab('checkout');});
  const placeOrder=()=>execute(async()=>{const r=await api(API+'/orders','POST',{addressId,payMethod,storeRequest:requestStore,riderRequest:requestRider,cutlery});
-  await refresh();setOrder(await api(API+'/orders/'+r.orderId));setPreview(null);setTab('order');inform('주문을 접수했어요.');});
- const showOrder=(orderId)=>execute(async()=>{setOrder(await api(API+'/orders/'+orderId));setTab('order');});
- const cancelOrder=()=>{if(!window.confirm('주문을 취소할까요?'))return;execute(async()=>{await api(API+'/orders/'+order.orderId+'/cancel','POST',{});setOrder(await api(API+'/orders/'+order.orderId));await refresh();inform('주문을 취소했어요.');});};
+  await refresh();setOrder(await fetchOrder(r.orderId));setPreview(null);setTab('order');inform('주문을 접수했어요.');});
+ const showOrder=(orderId)=>execute(async()=>{setOrder(await fetchOrder(orderId));setTab('order');});
+ const cancelOrder=()=>{
+  if(!window.confirm('주문을 취소할까요?'))return;
+  execute(async()=>{
+   const {orderId}=order;
+   const reloadOrder=async()=>{
+    const next=await fetchOrder(orderId);
+    ++orderRevision.current; // 먼저 시작한 폴링 응답이 취소 후 조회 결과를 덮지 않게 한다.
+    setOrder(current=>current?.orderId===orderId?next:current);
+   };
+   try{
+    await api(`${API}/orders/${orderId}/cancel`,'POST',{});
+   }catch(e){
+    if(e.status!==409)throw e;
+    alertError(e);
+    await reloadOrder().catch(()=>{}); // 조회도 실패하면 원래 충돌 메시지를 유지한다.
+    return;
+   }
+   await reloadOrder();await refresh();inform('주문을 취소했어요.');
+  });
+ };
  const reloadTab=(target)=>{setProfileDialog(null);setTab(target);setError('');setNotice('');if(['cart','orders','points','addresses','profile'].includes(target))refresh().catch(alertError);};
  const logout=()=>execute(async()=>{
   await api('/api/auth/logout','POST',{});
   loginQuery.current='';
   sessionEpoch.current+=1;listGeneration.current+=1;
   storeListGeneration.current+=1;publicReviewGeneration.current+=1;
-  setUser(null);setTab('home');setAddresses([]);setAddressId(null);setStores([]);setStore(null);
+  setUser(null);setTab('home');setAddresses([]);setAddressId(null);setStoreList(null);setStore(null);
   setMenus([]);setStoreReviews([]);setCart(null);setOrders([]);setOrderPage(emptyPage());setOrder(null);setPoints(null);setReviews([]);setReviewPage(emptyPage());
   setMenuDetail(null);setPreview(null);setReviewOrder(null);setReviewEdit(null);setProfileDialog(null);
  });
@@ -247,7 +295,7 @@ await api(API+'/cart/items','POST',{
    storeListGeneration.current+=1;publicReviewGeneration.current+=1;
    loginQuery.current='?withdrawn=1';
    setProfileDialog(null);setUser(null);setAuthMode('login');setTab('home');
-  setAddresses([]);setAddressId(null);setStores([]);setStore(null);setMenus([]);setStoreReviews([]);
+  setAddresses([]);setAddressId(null);setStoreList(null);setStore(null);setMenus([]);setStoreReviews([]);
   setCart(null);setOrders([]);setOrderPage(emptyPage());setOrder(null);setPoints(null);setReviews([]);setReviewPage(emptyPage());
   setMenuDetail(null);setPreview(null);setReviewOrder(null);setReviewEdit(null);
   inform(result.expiredPoint>0
@@ -257,13 +305,13 @@ await api(API+'/cart/items','POST',{
  const submitReview=()=>execute(async()=>{
   if(reviewEdit)await api(API+'/reviews/'+reviewEdit.reviewId,'PATCH',{rating,content:reviewContent});
   else await api(API+'/orders/'+reviewOrder.orderId+'/review','POST',{rating,content:reviewContent});
-  setReviewOrder(null);setReviewEdit(null);setReviewContent('');await refresh();if(tab==='order')setOrder(await api(API+'/orders/'+order.orderId));inform('리뷰가 저장되었어요.');
+  setReviewOrder(null);setReviewEdit(null);setReviewContent('');await refresh();if(tab==='order')setOrder(await fetchOrder(order.orderId));inform('리뷰가 저장되었어요.');
  });
  const deleteReview=(r)=>{if(!window.confirm('리뷰를 삭제할까요? 삭제 후 다시 작성할 수 없어요.'))return;execute(async()=>{await api(API+'/reviews/'+r.reviewId,'DELETE');await refresh();inform('리뷰를 삭제했어요.');});};
  const selectedOptionTotal=useMemo(()=>menuDetail?.optionGroups.flatMap(g=>g.options.filter(o=>(selectedOptions[g.optionGroupId]??[]).includes(o.optionId))).reduce((s,o)=>s+o.price,0)??0,[menuDetail,selectedOptions]);
  if(user===undefined)return <Loading/>;
  if(!user&&authMode==='login')return <Loading/>;
- if(!user)return <AuthForm mode={authMode} setMode={setAuthMode} busy={busy} error={error} onSubmit={data=>execute(async()=>{const mode=authMode;await api('/api/auth/'+(mode==='login'?'login':'signup'),'POST',data);if(mode==='signup'){loginQuery.current='?joined=1';setAuthMode('login');return;}const u=await api('/api/auth/me');sessionEpoch.current+=1;listGeneration.current+=1;storeListGeneration.current+=1;publicReviewGeneration.current+=1;setAddresses([]);setAddressId(null);setStores([]);setOrders([]);setOrderPage(emptyPage());setReviews([]);setReviewPage(emptyPage());setPoints(null);setUser(u);if(u.role==='CUSTOMER')await refresh();})} notice={notice}/>;
+ if(!user)return <AuthForm mode={authMode} setMode={setAuthMode} busy={busy} error={error} onSubmit={data=>execute(async()=>{const mode=authMode;await api('/api/auth/'+(mode==='login'?'login':'signup'),'POST',data);if(mode==='signup'){loginQuery.current='?joined=1';setAuthMode('login');return;}const u=await api('/api/auth/me');sessionEpoch.current+=1;listGeneration.current+=1;storeListGeneration.current+=1;publicReviewGeneration.current+=1;setAddresses([]);setAddressId(null);setStoreList(null);setOrders([]);setOrderPage(emptyPage());setReviews([]);setReviewPage(emptyPage());setPoints(null);setUser(u);if(u.role==='CUSTOMER')await refresh();})} notice={notice}/>;
  if(user.role!=='CUSTOMER')return <Loading/>;
  return <div className="app-shell">
   <header className="top-header"><div className="header-inner"><button className="brand" onClick={()=>reloadTab('home')}>{BRAND_HEAD}<span>{BRAND_TAIL}</span><small>음식배달</small></button>
@@ -287,10 +335,10 @@ await api(API+'/cart/items','POST',{
     <div className="qty-line"><span>수량</span><div className="stepper"><button onClick={()=>setQuantity(Math.max(1,quantity-1))}>−</button><b>{quantity}</b><button onClick={()=>setQuantity(Math.min(Number.MAX_SAFE_INTEGER,quantity+1))}>+</button></div></div><Btn disabled={busy||menuDetail.saleStatus!=='ON_SALE'} onClick={addMenu}>장바구니 담기 · {cash((menuDetail.price+selectedOptionTotal)*quantity)}</Btn></div></div>}
    </>}
    {tab==='cart'&&<><h1 className="page-title">장바구니</h1>{!cart?.items?.length?<Empty title="장바구니가 비어 있어요" description="먹고 싶은 메뉴를 골라보세요." action={<Btn onClick={()=>reloadTab('home')}>메뉴 둘러보기</Btn>}/>:<div className="two-col"><section className="panel"><h2>{cart.storeName}</h2><button className="text-button" disabled={busy} onClick={()=>{if(window.confirm('장바구니의 모든 메뉴를 삭제할까요?'))execute(async()=>{await api(API+'/cart','DELETE');setCart(await api(API+'/cart'));inform('장바구니를 비웠어요.');});}}>장바구니 전체 비우기</button>{cart.items.map(item=><div className="cart-line" key={item.cartItemId}><div><b>{item.menuName}</b><p>{item.options.map(o=>o.optionName).join(', ')||'기본'}</p><p className={item.available?'':'danger'}>{item.available?'':'판매 불가 · '}{cash(item.lineTotal)}</p></div><div className="stepper"><button disabled={busy || item.quantity <= 1}onClick={() => updateCart(item, item.quantity - 1)}>−</button><b>{item.quantity}</b><button onClick={()=>updateCart(item,item.quantity+1)}>+</button></div><button className="text-button" onClick={()=>removeCart(item)}>삭제</button></div>)}</section><aside className="panel"><h3>결제 금액</h3><PriceRow name="메뉴 금액" value={cart.orderTotal}/><PriceRow name="배달팁" value={cart.deliveryTip}/><PriceRow name="총 결제금액" value={cart.payAmount} strong/>{cart.orderTotal<cart.minOrderAmount&&<p className="danger">최소주문금액 {cash(cart.minOrderAmount)} 이상 담아주세요.</p>}<label className="field">결제수단<select value={payMethod} onChange={e=>setPayMethod(e.target.value)}><option value="CARD">카드</option><option value="KAKAO">카카오페이</option><option value="NAVER">네이버페이</option><option value="POINT">포인트</option></select></label><Btn disabled={busy||!addressId||cart.orderTotal<cart.minOrderAmount||cart.items.some(i=>!i.available)} onClick={startCheckout}>주문서 작성하기</Btn></aside></div>}</>}
-   {tab==='checkout'&&preview&&<><button className="back" onClick={()=>reloadTab('cart')}>‹ 장바구니</button><h1 className="page-title">주문서 작성</h1><div className="two-col"><section className="panel"><h3>배달 주소</h3><p>{activeAddress?.address} {activeAddress?.addressDetail}</p><label className="field">가게 요청사항<textarea placeholder="예: 소스 넉넉하게 주세요" value={requestStore} onChange={e=>setRequestStore(e.target.value)} maxLength={500}/></label><label className="field">라이더 요청사항<textarea placeholder="예: 문 앞에 놓아주세요" value={requestRider} onChange={e=>setRequestRider(e.target.value)} maxLength={500}/></label><label className="checkline"><input type="checkbox" checked={cutlery} onChange={e=>setCutlery(e.target.checked)}/> 일회용 수저·포크 받기</label></section><aside className="panel"><h3>주문 금액</h3><p>{preview.storeName}</p><PriceRow name="메뉴 금액" value={preview.orderTotal}/><PriceRow name="배달팁" value={preview.deliveryTip}/><PriceRow name="최종 결제 금액" value={preview.payAmount} strong/><p className="muted">결제수단: {payMethod} (실제 결제 없이 가상 승인)</p><Btn disabled={busy} onClick={placeOrder}>{cash(preview.payAmount)} 주문하기</Btn></aside></div></>}
+   {tab==='checkout'&&preview&&<><button className="back" onClick={()=>reloadTab('cart')}>‹ 장바구니</button><h1 className="page-title">주문서 작성</h1><div className="two-col"><section className="panel"><h3>배달 주소</h3><p>{activeAddress?.address} {activeAddress?.addressDetail}</p><label className="field">가게 요청사항<textarea placeholder="예: 소스 넉넉하게 주세요" value={requestStore} onChange={e=>setRequestStore(e.target.value)} maxLength={500}/></label><label className="field">라이더 요청사항<textarea placeholder="예: 문 앞에 놓아주세요" value={requestRider} onChange={e=>setRequestRider(e.target.value)} maxLength={500}/></label><label className="checkline"><input type="checkbox" checked={cutlery} onChange={e=>setCutlery(e.target.checked)}/> 일회용 수저·포크 받기</label></section><aside className="panel"><h3>주문 금액</h3><p>{preview.storeName}</p><PriceRow name="메뉴 금액" value={preview.orderTotal}/><PriceRow name="배달팁" value={preview.deliveryTip}/><PriceRow name="최종 결제 금액" value={preview.payAmount} strong/><p className="muted">결제수단: {PAY_METHOD[payMethod]} (실제 결제 없이 가상 승인)</p><Btn disabled={busy} onClick={placeOrder}>{cash(preview.payAmount)} 주문하기</Btn></aside></div></>}
    {tab==='orders'&&<><h1 className="page-title">주문 내역</h1>{orders.length===0?<Empty icon="🛵" title="아직 주문 내역이 없어요" description="맛있는 첫 주문을 시작해보세요." action={<Btn onClick={()=>reloadTab('home')}>가게 찾기</Btn>}/>:<div className="simple-list">{orders.map(o=><button className="list-card" key={o.orderId} onClick={()=>showOrder(o.orderId)}><div><span className={'state state-'+o.status}>{statusLabel[o.status]}</span><h3>{o.storeName}</h3><p>{o.summary} · {o.orderedAt}</p><strong>{cash(o.payAmount)}</strong></div><span className="chevron">›</span></button>)}</div>}{orders.length>0&&<MoreResults shown={orders.length} total={orderPage.totalCount} busy={busy} onClick={()=>loadMore('orders')}/>}</>}
    {tab==='order'&&order&&<><button className="back" onClick={()=>reloadTab('orders')}>‹ 주문 내역</button><div className="panel order-summary"><div className={'state state-'+order.status}>{statusLabel[order.status]}</div><h1>{order.store.storeName}</h1><p className="muted">주문번호 #{order.orderId} · {order.orderedAt}</p>{order.status==='WAIT'&&<p className="soft-info">사장님이 주문을 확인하고 있어요. {order.autoCancelAt}까지 미접수 시 자동 취소돼요.</p>}{order.status==='CANCEL'&&<p className="danger">취소 사유: {order.cancelReasonDetail??order.cancelReason}</p>}
-    <div className="separator"/>{order.items.map((x,i)=><div className="price-row" key={i}><span>{x.menuName} × {x.quantity}<small className="sub">{x.options.map(o=>o.optionName).join(', ')}</small></span><b>{cash(x.lineTotal)}</b></div>)}<PriceRow name="메뉴 금액" value={order.orderTotal}/><PriceRow name="배달팁" value={order.deliveryTip}/><PriceRow name="결제 금액" value={order.payAmount} strong/><p className="muted">배달지: {order.deliveryAddress} {order.deliveryAddressDetail} · {order.payMethod}</p>
+    <div className="separator"/>{order.items.map((x,i)=><div className="price-row" key={i}><span>{x.menuName} × {x.quantity}<small className="sub">{x.options.map(o=>o.optionName).join(', ')}</small></span><b>{cash(x.lineTotal)}</b></div>)}<PriceRow name="메뉴 금액" value={order.orderTotal}/><PriceRow name="배달팁" value={order.deliveryTip}/><PriceRow name="결제 금액" value={order.payAmount} strong/><p className="muted">배달지: {order.deliveryAddress} {order.deliveryAddressDetail} · {PAY_METHOD[order.payMethod]??order.payMethod}</p>
     {order.canCancel&&<Btn secondary onClick={cancelOrder}>주문 취소</Btn>}{order.canReview&&<Btn onClick={()=>{setError('');setReviewOrder(order);setRating(5);setReviewContent('');}}>리뷰 작성</Btn>}</div></>}
    {tab==='points'&&<><h1 className="page-title">내 포인트</h1><div className="points-banner"><div>현재 보유 포인트</div><strong>{cash(points?.balance)}</strong><p>포인트로 주문하거나 충전할 수 있어요.</p></div><div className="panel"><h2>포인트 충전</h2><ChargeForm busy={busy} onCharge={(amount,method)=>execute(async()=>{await api(API+'/points/charges','POST',{amount,method});await refresh();inform('포인트 충전이 완료됐어요.');})}/></div><div className="panel"><h3>포인트 사용 내역</h3>{points?.items?.length?points.items.map(tx=><div className="price-row" key={tx.transactionId}><span>{({CHARGE:'충전',USE:'주문 사용',REFUND:'취소 환불',EXPIRE:'포인트 소멸'}[tx.type]??tx.type)}<small className="sub">{tx.occurredAt}</small></span><b>{['USE','EXPIRE'].includes(tx.type)?'-':'+'}{cash(tx.amount)}</b></div>):<p className="muted">이용 내역이 없습니다.</p>}<MoreResults shown={points?.items?.length??0} total={points?.totalCount??0} busy={busy} onClick={()=>loadMore('points')}/></div></>}
    {tab==='addresses'&&<><div className="section-title"><h1>배달 주소 관리</h1><Btn onClick={()=>{setError('');setEditAddress(null);setShowAddressForm(true);}}>+ 주소 추가</Btn></div>{addresses.length?addresses.map(a=><div key={a.addressId} className="address-card"><div><b>{a.addressName} {a.isDefault&&<span className="tag">기본 주소</span>}</b><p>{a.address} {a.addressDetail}</p><small>{a.zipCode}</small></div><div className="address-actions">{!a.isDefault&&<button onClick={()=>execute(async()=>{await api(API+'/addresses/'+a.addressId+'/default','PATCH',{});await refresh();})}>기본으로</button>}<button onClick={()=>{setError('');setEditAddress(a);setShowAddressForm(true);}}>수정</button><button onClick={()=>{if(window.confirm('주소를 삭제할까요?'))execute(async()=>{await api(API+'/addresses/'+a.addressId,'DELETE');await refresh();});}}>삭제</button></div></div>):<Empty icon="📍" title="저장된 주소가 없습니다" description="배달 받을 주소를 등록해주세요."/>}
