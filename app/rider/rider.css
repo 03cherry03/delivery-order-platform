@@ -43,7 +43,7 @@
 .rd-btn-ghost { background: var(--bg-surface); color: var(--fg-1); box-shadow: inset 0 0 0 1.5px var(--border-2); }
 .rd-btn-ghost:not(:disabled):hover { background: var(--bg-subtle); }
 .rd-btn-danger { background: var(--red-tint); color: var(--red); }
-.rd-btn-danger:not(:disabled):hover { background: var(--red); color: #fff; }
+.rd-btn-danger:not(:disabled):hover { background: var(--red); color: var(--bg-surface); }
 .rd-btn-text { background: transparent; color: var(--fg-3); }
 .rd-btn-text:not(:disabled):hover { color: var(--fg-1); }
 .rd-btn:focus-visible, .rd-chip:focus-visible, .rd-navItem:focus-visible { outline: 2px solid var(--mint7); outline-offset: 2px; }
@@ -76,8 +76,8 @@
   outline: none; transition: border-color var(--dur) var(--ease-out);
 }
 .rd-input:focus { border-color: var(--fg-1); }
-.rd-formError { background: var(--red-tint); color: #bb2523; padding: 12px 14px; border-radius: var(--r-md); font-size: 14px; }
-.rd-notice { background: var(--orange-tint); color: #bb4500; padding: 10px 12px; border-radius: var(--r-md); font-size: 13px; margin-bottom: var(--s4); }
+.rd-formError { background: var(--red-tint); color: var(--tone-red-fg); padding: 12px 14px; border-radius: var(--r-md); font-size: 14px; }
+.rd-notice { background: var(--orange-tint); color: var(--tone-orange-fg); padding: 10px 12px; border-radius: var(--r-md); font-size: 13px; margin-bottom: var(--s4); }
 
 .rd-chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .rd-chip {
@@ -118,7 +118,7 @@
   padding: 12px 20px; border-radius: var(--r-pill); font-size: 14px; font-weight: 600;
   animation: rd-rise var(--dur) var(--ease-out); max-width: calc(100vw - 32px); text-align: center;
 }
-.rd-toastError { background: var(--red); color: #fff; }
+.rd-toastError { background: var(--red); color: var(--bg-surface); }
 
 /* ── 빈 상태, 로딩, 오류 ── */
 .rd-empty { padding: var(--s9) var(--s4); text-align: center; color: var(--fg-3); font-size: 14px; background: var(--bg-surface); border-radius: var(--r-lg); }
@@ -187,7 +187,7 @@
 
 .rd-busyBanner {
   display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
-  background: var(--navy); color: #fff; border-radius: var(--r-lg); padding: 14px var(--s4); font-size: 14px;
+  background: var(--navy); color: var(--bg-surface); border-radius: var(--r-lg); padding: 14px var(--s4); font-size: 14px;
 }
 .rd-busyGo { font-weight: 800; white-space: nowrap; color: var(--primary); }
 
@@ -209,7 +209,7 @@
 .rd-routeAddr { font-size: 12px; color: var(--fg-3); }
 .rd-routeDist { font-size: 12px; color: var(--fg-2); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; margin-top: 2px; }
 .rd-reqFoot { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--border-1); }
-.rd-readyNow { font-size: 13px; font-weight: 700; color: #0f59b7; }
+.rd-readyNow { font-size: 13px; font-weight: 700; color: var(--tone-blue-fg); }
 .rd-readyLater { font-size: 13px; color: var(--fg-2); }
 
 .rd-confirm { display: flex; flex-direction: column; gap: 10px; background: var(--bg-subtle); border-radius: var(--r-md); padding: var(--s4); font-size: 14px; }
@@ -218,7 +218,7 @@
 .rd-confirm dd, .rd-kv dd { text-align: right; }
 
 /* ── 현재 배달 ── */
-.rd-hero { background: var(--fg-1); color: #fff; border-radius: var(--r-lg); padding: var(--s5); }
+.rd-hero { background: var(--fg-1); color: var(--bg-surface); border-radius: var(--r-lg); padding: var(--s5); }
 .rd-heroTop { display: flex; align-items: center; justify-content: space-between; }
 .rd-heroNo { font-size: 12px; color: rgba(255, 255, 255, 0.6); font-variant-numeric: tabular-nums; }
 .rd-heroMsg { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.35; margin: var(--s3) 0 var(--s5); }
@@ -228,8 +228,8 @@
 .rd-stepDot { width: 14px; height: 14px; border-radius: 50%; background: #3a3a3a; border: 2px solid rgba(255, 255, 255, 0.3); position: relative; }
 .rd-steps .rd-stepDone { color: rgba(255, 255, 255, 0.85); }
 .rd-stepDone .rd-stepDot { background: var(--mint6); border-color: var(--mint6); }
-.rd-steps .rd-stepOn { color: #fff; font-weight: 700; }
-.rd-stepOn .rd-stepDot { background: var(--primary); border-color: #fff; box-shadow: 0 0 0 4px rgba(12, 239, 211, 0.3); }
+.rd-steps .rd-stepOn { color: var(--bg-surface); font-weight: 700; }
+.rd-stepOn .rd-stepDot { background: var(--primary); border-color: var(--bg-surface); box-shadow: 0 0 0 4px rgba(12, 239, 211, 0.3); }
 .rd-stepTime { font-size: 11px; font-variant-numeric: tabular-nums; min-height: 16px; }
 
 .rd-cardFocus { box-shadow: inset 0 0 0 2px var(--fg-1); }
