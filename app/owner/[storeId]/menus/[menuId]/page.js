@@ -102,12 +102,19 @@ function OptionGroups({ storeId, menu, reload }) {
   const toast = useToast();
   const [groupModal, setGroupModal] = useState(null); // null | { mode: 'new' } | { mode: 'edit', group }
   const [confirm, setConfirm] = useState(null);
+  const isOption = confirm?.optionId != null;
+  const deleteKind = isOption ? '옵션' : '옵션 그룹';
 
   async function act(fn, msg) {
     try { await fn(); if (msg) toast(msg); reload(); return true; } catch (e) {
       toast(e.code === 'REQUIRED_GROUP_EMPTY' ? '필수 옵션 그룹에는 옵션이 하나 이상 있어야 해요. 그룹을 통째로 지우거나 필수를 해제하세요.' : e.message, 'error');
       return false;
     }
+  }
+
+  function remove() {
+    setConfirm(null);
+    act(() => (isOption ? deleteOption(storeId, confirm.optionId) : deleteOptionGroup(storeId, confirm.optionGroupId)), `${deleteKind}을 삭제했어요`);
   }
 
   return (
@@ -130,7 +137,7 @@ function OptionGroups({ storeId, menu, reload }) {
             {g.options.map((o) => (
               <OptionRow key={o.optionId} option={o}
                 onSave={(patch) => act(() => updateOption(storeId, o.optionId, patch), '옵션을 저장했어요')}
-                onDelete={() => act(() => deleteOption(storeId, o.optionId), '옵션을 삭제했어요')} />
+                onDelete={() => setConfirm(o)} />
             ))}
             <AddOption onAdd={(opt) => act(() => createOption(storeId, g.optionGroupId, opt), '옵션을 추가했어요')} />
           </div>
@@ -149,10 +156,10 @@ function OptionGroups({ storeId, menu, reload }) {
           }}
         />
       )}
-      <Modal open={!!confirm} title="옵션 그룹을 삭제할까요?" desc={confirm ? `${confirm.groupName}과(와) 안의 옵션이 함께 삭제돼요.` : ''} onClose={() => setConfirm(null)}>
+      <Modal open={!!confirm} title={confirm ? `‘${isOption ? confirm.optionName : confirm.groupName}’ ${deleteKind}을 삭제할까요?` : ''} desc={isOption ? undefined : '안의 옵션도 함께 삭제돼요.'} onClose={() => setConfirm(null)}>
         <ModalActions>
-          <Button variant="ghost" size="md" onClick={() => setConfirm(null)}>취소</Button>
-          <Button variant="danger" size="md" onClick={async () => { await act(() => deleteOptionGroup(storeId, confirm.optionGroupId), '옵션 그룹을 삭제했어요'); setConfirm(null); }}>삭제</Button>
+          <Button variant="ghost" size="md" autoFocus onClick={() => setConfirm(null)}>취소</Button>
+          <Button variant="danger" size="md" onClick={remove}>삭제</Button>
         </ModalActions>
       </Modal>
     </Card>

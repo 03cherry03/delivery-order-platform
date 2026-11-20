@@ -23,7 +23,7 @@
 .ow-storeId-menus-menus-rowActions { display: flex; flex: none; }
 
 .ow-storeId-menus-menus-saveBar {
-  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20;
+  position: fixed; left: 50%; bottom: calc(var(--nav-h) + 24px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 20;
   background: var(--bg-inverse); color: rgba(255, 255, 255, 0.9); border-radius: var(--r-pill);
   padding: 8px 8px 8px 22px; display: flex; align-items: center; gap: var(--s4); font-weight: 600; font-size: 14px;
 }

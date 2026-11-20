@@ -140,7 +140,7 @@ export default function MenusPage() {
         </div>
       )}
 
-      <Modal open={!!toDelete} title="메뉴를 삭제할까요?" desc={toDelete ? `${toDelete.menuName}과(와) 옵션이 함께 삭제돼요. 이미 들어온 주문에는 영향이 없어요.` : ''} onClose={() => setToDelete(null)}>
+      <Modal open={!!toDelete} title={toDelete ? `‘${toDelete.menuName}’ 메뉴를 삭제할까요?` : ''} desc="옵션도 함께 삭제돼요. 이미 들어온 주문에는 영향이 없어요." onClose={() => setToDelete(null)}>
         <ModalActions>
           <Button variant="ghost" size="md" onClick={() => setToDelete(null)}>취소</Button>
           <Button variant="danger" size="md" onClick={confirmDelete}>삭제</Button>
@@ -156,6 +156,8 @@ function CategoryModal({ storeId, cats, onClose, onChanged }) {
   const toast = useToast();
   const [name, setName] = useState('');
   const [editing, setEditing] = useState(null); // { categoryId, name }
+  const [toDelete, setToDelete] = useState(null);
+  const notEmpty = '메뉴가 남아 있는 분류는 지울 수 없어요. 메뉴를 옮기거나 지운 뒤 다시 시도해 주세요.';
 
   async function add(e) {
     e.preventDefault();
@@ -176,11 +178,23 @@ function CategoryModal({ storeId, cats, onClose, onChanged }) {
     } catch (err) { toast(err.message, 'error'); }
   }
   async function remove(c) {
+    setToDelete(null);
     try {
       await deleteCategory(storeId, c.categoryId);
       toast(`${c.categoryName} 분류를 삭제했어요`);
       onChanged();
-    } catch (err) { toast(err.code === 'CATEGORY_NOT_EMPTY' ? '메뉴가 남아 있는 분류는 지울 수 없어요. 메뉴를 옮기거나 지운 뒤 다시 시도해 주세요.' : err.message, 'error'); }
+    } catch (err) { toast(err.code === 'CATEGORY_NOT_EMPTY' ? notEmpty : err.message, 'error'); }
+  }
+
+  if (toDelete) {
+    return (
+      <Modal open title={`‘${toDelete.categoryName}’ 분류를 삭제할까요?`} onClose={() => setToDelete(null)}>
+        <ModalActions>
+          <Button variant="ghost" size="md" autoFocus onClick={() => setToDelete(null)}>취소</Button>
+          <Button variant="danger" size="md" onClick={() => remove(toDelete)}>삭제</Button>
+        </ModalActions>
+      </Modal>
+    );
   }
 
   return (
@@ -199,7 +213,7 @@ function CategoryModal({ storeId, cats, onClose, onChanged }) {
                 <span className={s.catItemName}>{c.categoryName}</span>
                 <span className="small muted">메뉴 {c.menus.length}</span>
                 <Button variant="text" size="sm" onClick={() => setEditing({ categoryId: c.categoryId, name: c.categoryName })}>이름 변경</Button>
-                <Button variant="text" size="sm" onClick={() => remove(c)}>삭제</Button>
+                <Button variant="text" size="sm" onClick={() => (c.menus.length ? toast(notEmpty, 'error') : setToDelete(c))}>삭제</Button>
               </>
             )}
           </div>
