@@ -63,16 +63,14 @@ function RiderMockLogin() {
           <Button type="submit" size="lg" full disabled={busy}>{busy ? '확인하는 중' : '로그인'}</Button>
         </form>
         <p className="rd-authFoot">처음이신가요?<Link href="/rider/signup">라이더 회원가입</Link></p>
-        {USE_MOCK && (
-          <div className="rd-demo">
-            <p>목업 모드 · 테스트 계정 (비밀번호 test1234)</p>
-            <div className="rd-demoBtns">
-              <button type="button" onClick={() => fill(1)}>rider1 · 배차 대기</button>
-              <button type="button" onClick={() => fill(2)}>rider2 · 배달 중</button>
-              <button type="button" onClick={() => fill(3)}>rider3 · 픽업 전</button>
-            </div>
+        <div className="rd-demo">
+          <p>목업 모드 · 테스트 계정 (비밀번호 test1234)</p>
+          <div className="rd-demoBtns">
+            <button type="button" onClick={() => fill(1)}>rider1 · 배차 대기</button>
+            <button type="button" onClick={() => fill(2)}>rider2 · 배달 중</button>
+            <button type="button" onClick={() => fill(3)}>rider3 · 픽업 전</button>
           </div>
-        )}
+        </div>
       </div>
     </main>
   );

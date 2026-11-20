@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { BRAND } from '@/lib/brand';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { signupOwner } from '@/lib/owner/api';
+import { signupOwner, USE_MOCK } from '@/lib/owner/api';
 import { Button, Card, Field, useToast } from '@/components/owner/ui';
 import StoreForm, { initialStore, storeBody } from '@/components/owner/StoreForm';
 import s from '../auth.styles';
@@ -30,7 +30,7 @@ export default function SignupPage() {
     try {
       await signupOwner({ ...acc, store: sb.body });
       toast('가입했어요. 입점 승인을 기다리는 동안 로그인할 수 있어요.');
-      router.push('/owner/login?joined=1');
+      router.push(USE_MOCK ? '/owner/login?joined=1' : '/login?joined=1');
     } catch (err) {
       setErrors(err.fields || {});
       setFormError(err.message);

@@ -8,7 +8,7 @@
 
 | 경로 | 기능 |
 |---|---|
-| `/admin/login` | 로그인 및 관리자 역할 확인 |
+| `/login` (`/admin/login`은 목업용) | 로그인 및 관리자 역할 확인 |
 | `/admin` | 관리자 요약 |
 | `/admin/applications` | 입점 신청 조회·승인·반려 |
 | `/admin/reports` | 리뷰 신고 조회·처리 |
@@ -25,13 +25,12 @@
 | API 클라이언트 | `lib/admin/api.js` |
 | 인증 | 공통 `delivery_session` 쿠키, `credentials: 'include'` |
 | 저장 위치 | 공통 API 서버의 `server/delivery.db` |
-| 기본 모드 | 실제 API 호출 |
+| 기본 모드 | 실제 API 호출 (`NEXT_PUBLIC_USE_MOCK` 미설정 또는 `true` 외의 값) |
 
 루트 `.env.local`은 다음과 같이 설정합니다.
 
 ```dotenv
 NEXT_PUBLIC_API_BASE=http://localhost:4000
-NEXT_PUBLIC_USE_MOCK=false
 ```
 
 `NEXT_PUBLIC_USE_MOCK=true`인 경우에만 관리자 별도 시연 데이터를 사용합니다. 실제 API 모드에서는 공통 SQLite의 조회 결과와 처리 결과가 화면에 반영됩니다.

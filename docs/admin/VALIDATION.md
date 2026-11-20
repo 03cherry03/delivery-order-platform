@@ -56,11 +56,10 @@ npm.cmd run setup:server
 
 ### 전체 빌드
 
-루트 `.env.local`에서 다음 값을 확인합니다.
+실제 API 모드로 검증하려면 `NEXT_PUBLIC_USE_MOCK`을 설정하지 않거나 `true` 외의 값으로 둡니다. API 주소가 기본값과 다르면 루트 `.env.local`의 주소를 맞춥니다.
 
 ```dotenv
 NEXT_PUBLIC_API_BASE=http://localhost:4000
-NEXT_PUBLIC_USE_MOCK=false
 ```
 
 ```powershell
@@ -77,7 +76,7 @@ npx.cmd eslint app/admin components/admin lib/admin scripts/test-admin-api.mjs
 
 ## 4. 사용자 PC에서 확인할 화면 동작
 
-두 개발 서버를 켠 뒤 `http://localhost:3000/admin/login`을 엽니다. 초기 계정은 `admin@test.com / test1234`입니다.
+두 개발 서버를 켠 뒤 `http://localhost:3000/login`을 엽니다. 초기 계정은 `admin@test.com / test1234`입니다.
 
 | 확인 | 기대 결과 |
 |---|---|

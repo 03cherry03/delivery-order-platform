@@ -11,7 +11,7 @@ import { BRAND, brandParts } from '@/lib/brand';
 
 const [BRAND_HEAD, BRAND_TAIL] = brandParts(BRAND.customer);
 
-const MOCK_ON = process.env.NEXT_PUBLIC_USE_MOCK !== 'false';
+const MOCK_ON = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
 
 const NOTICE = {
   joined: '가입이 완료됐어요. 로그인해 주세요.',
@@ -79,17 +79,25 @@ function Login() {
   }
 
   async function switchAccount() {
+    setError('');
     setBusy(true);
-    await logout().catch(() => {});
-    setCurrent(null);
-    setPassword('');
-    setBusy(false);
-    setView('form');
+    try {
+      await logout();
+      setCurrent(null);
+      setPassword('');
+      setView('form');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (view === 'checking') {
     return <main className="lg-page"><p className="lg-checking">확인하는 중…</p></main>;
   }
+
+  const errorAlert = error && <div className="lg-error" role="alert">{error}</div>;
 
   return (
     <main className="lg-page">
@@ -104,6 +112,7 @@ function Login() {
               열려던 화면은 {ROLES[roleOfPath(next)]?.label} 계정이 필요해요.
             </p>
             <div className="lg-stack">
+              {errorAlert}
               <button className="lg-btn" type="button" disabled={busy} onClick={() => go(current)}>
                 {ROLES[current.role]?.label ?? '내'} 화면으로 가기
               </button>
@@ -128,7 +137,7 @@ function Login() {
                 <span>비밀번호</span>
                 <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
               </label>
-              {error && <div className="lg-error" role="alert">{error}</div>}
+              {errorAlert}
               <button className="lg-btn" type="submit" disabled={busy}>{busy ? '확인하는 중' : '로그인'}</button>
             </form>
 
@@ -146,8 +155,8 @@ function Login() {
 
       {MOCK_ON && (
         <p className="lg-mock">
-          지금은 목업 모드라 사장님·라이더 화면이 가짜 데이터를 써요. 실제 API로 로그인하려면
-          <code>.env.local</code>에 <code>NEXT_PUBLIC_USE_MOCK=false</code>를 넣고 화면 서버를 다시 켜 주세요.
+          사장님·라이더·관리자 화면은 목업 데이터를 사용하지만, 통합 로그인은 실제 API를 사용해요.
+          실제 API 모드로 바꾸려면 <code>.env.local</code>의 <code>NEXT_PUBLIC_USE_MOCK=true</code> 설정을 제거하고 개발 서버를 다시 켜 주세요. 배포용 화면은 다시 빌드해 주세요.
         </p>
       )}
     </main>

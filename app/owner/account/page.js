@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { withdraw } from '@/lib/owner/api';
+import { withdraw, USE_MOCK } from '@/lib/owner/api';
 import { useMe } from '@/lib/owner/hooks';
 import { Button, Card, Field, Loading, useToast } from '@/components/owner/ui';
 import s from '@/app/owner/auth.styles';
@@ -31,7 +31,7 @@ export default function AccountPage() {
     try {
       await withdraw(password);
       toast('탈퇴했어요. 그동안 고마웠어요');
-      router.replace('/owner/login?withdrawn=1');
+      router.replace(USE_MOCK ? '/owner/login?withdrawn=1' : '/login?withdrawn=1');
     } catch (err) {
       setError(MESSAGES[err.code] || err.message);
     } finally {

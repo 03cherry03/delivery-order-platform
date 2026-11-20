@@ -59,6 +59,8 @@ npm run setup:server
 npm run db:init
 ```
 
+**DB 초기화 주의:** `npm run db:init`과 `npm run api:smoke`는 둘 다 기존 `server/delivery.db`를 삭제하고 다시 만듭니다. 실행 전에 API 서버를 끄고, 명령이 끝나면 다시 켜세요. 서버를 켠 채로 실행하면 서버가 삭제된 DB 파일을 계속 사용해 모든 쓰기 요청이 `500` 오류(`SQLITE_READONLY_DBMOVED`)로 실패합니다.
+
 화면 환경변수는 루트의 `.env.example`을 `.env.local`로 복사합니다.
 
 ```sh
@@ -66,8 +68,8 @@ cp .env.example .env.local
 ```
 
 PowerShell에서는 `Copy-Item .env.example .env.local`을 사용합니다.
-예시 값은 `NEXT_PUBLIC_API_BASE=http://localhost:4000`, `NEXT_PUBLIC_USE_MOCK=false`입니다.
-환경변수를 바꾸면 화면 개발 서버를 다시 켭니다.
+기본 API 주소는 `http://localhost:4000`입니다. `NEXT_PUBLIC_USE_MOCK`을 설정하지 않거나 값이 `true`가 아니면 실제 API를 사용합니다. `NEXT_PUBLIC_USE_MOCK=true`일 때만 사장님·라이더·관리자 화면에서 목업 데이터를 사용합니다.
+환경변수를 바꾸면 화면 개발 서버를 다시 켜고, 배포용 화면은 다시 빌드합니다.
 
 #### 운영 실행
 
@@ -110,7 +112,6 @@ server 폴더에서 API를 직접 개발 실행하려면 `cd server && npm run d
 ### 참고 사항
 - Node.js 24를 사용합니다.
 - DB 초기화는 `server/db/`의 스키마·VIEW·트리거·시연 데이터를 `server/delivery.db`에 적용합니다.
-- `npm run db:init`은 루트에서 실행합니다. 기존 DB를 지우므로 API 서버를 끄고 초기화한 뒤 다시 켭니다.
 - seed 없이 초기화하려면 `npm run db:init -- --empty`를 사용합니다.
 - 시연 계정 비밀번호는 모두 `test1234`입니다. 계정 목록은 [백엔드 안내](server/docs/BACKEND.md#시연-계정-npm-run-dbinit-후)에 있습니다.
 - DB 파일과 로컬 환경 파일은 GitHub 업로드에서 제외됩니다.

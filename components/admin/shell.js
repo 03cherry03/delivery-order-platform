@@ -34,7 +34,7 @@ export default function AdminShell({children}){
   window.addEventListener('admin-session-expired',expired);
   return()=>{valid=false;window.removeEventListener('admin-session-expired',expired);};
  },[isLogin,router]);
- async function signOut(){setLeaving(true);try{await logout();setMe(null);router.replace('/admin/login');}catch(e){setAuthError(e);}finally{setLeaving(false);}}
+ async function signOut(){setLeaving(true);try{await logout();setMe(null);router.replace(USE_MOCK?'/admin/login':'/login');}catch(e){setAuthError(e);}finally{setLeaving(false);}}
  if(isLogin)return children;
  if(authError)return <div style={{maxWidth:640,margin:'15vh auto',padding:24}}><Brand/><ErrorBox error={authError} onRetry={()=>window.location.reload()}/><Button onClick={signOut} loading={leaving}>{L.logout}</Button></div>;
  if(checking||!me)return <Loading/>;

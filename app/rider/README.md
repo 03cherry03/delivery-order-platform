@@ -1,15 +1,15 @@
 # 라이더 화면 (/rider)
 
 라이더 화면 API 명세서(D-01~D-09)와 공통 인증(A-01~A-03)을 따라 만든 라이더용 화면입니다.
-사장 화면(`app/owner`)과 같은 방식으로 만들었습니다: 백엔드가 없어도 브라우저 안의 가짜 서버(목업)로 전체 흐름을 돌려 볼 수 있고, 백엔드가 붙으면 환경 변수 하나로 진짜 `/api`를 부릅니다.
+기본은 실제 Express API 연결이며, 목업 모드를 켜면 백엔드 없이 브라우저에서 전체 흐름을 확인할 수 있습니다.
 
-## 실행
+## 목업 모드로 실행
 
 ```
 npm run dev
 ```
 
-`.env.local` 없이(또는 `NEXT_PUBLIC_USE_MOCK=true`로) 실행하면 목업 모드다. http://localhost:3000/rider/login 에서 아래 계정으로 로그인합니다. (비밀번호 모두 `test1234`, 로그인 화면의 버튼을 누르면 자동 입력)
+`.env.local`에 `NEXT_PUBLIC_USE_MOCK=true`를 설정한 뒤 실행합니다. 이미 화면 개발 서버를 켰다면 다시 켭니다. http://localhost:3000/rider/login 에서 아래 계정으로 로그인합니다. (비밀번호 모두 `test1234`, 로그인 화면의 버튼을 누르면 자동 입력)
 
 | 계정 | 처음 상태 | 확인할 수 있는 것 |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ npm run dev
 
 | 주소 | 화면 | 쓰는 API |
 | --- | --- | --- |
-| /rider/login | 로그인. 배달 중이면 현재 배달로, 아니면 배차 대기로 | A-01, D-02 |
+| /login (`/rider/login`은 목업용) | 로그인. 배달 중이면 현재 배달로, 아니면 배차 대기로 | A-01, D-02 |
 | /rider/signup | 라이더 회원가입 (운송수단, 활동 반경) | D-01, A-01 |
 | /rider | 배차 대기 목록, 5초마다 새로고침. 수락 전에 확인 창 | D-04, D-05 |
 | /rider/current | 현재 배달, 10초마다 새로고침. READY일 때만 [픽업 완료], DELIVERING일 때만 [배달 완료] | D-06, D-07, D-08 |
@@ -47,7 +47,7 @@ npm run dev
 
 ## 실제 API로 실행 (server/ Express)
 
-루트 README 순서대로 `npm run setup:server` → `npm run db:init`을 하고, `.env.example`을 `.env.local`로 복사한 뒤 터미널 두 개에서 `npm run dev:server`, `npm run dev:web`을 켠다. `.env.local`의 `NEXT_PUBLIC_USE_MOCK=false`이면 화면 위 "목업 모드" 띠가 사라지고 `http://localhost:4000/api/...`를 부른다(세션 쿠키, `credentials: 'include'`).
+루트 README 순서대로 `npm run setup:server` → `npm run db:init`을 하고 터미널 두 개에서 `npm run dev:server`, `npm run dev:web`을 켠다. `NEXT_PUBLIC_USE_MOCK`을 설정하지 않거나 값이 `true`가 아니면 "목업 모드" 띠가 표시되지 않고 기본 주소 `http://localhost:4000/api/...`를 부른다(세션 쿠키, `credentials: 'include'`).
 
 실제 API 모드에서는 통합 로그인 http://localhost:3000/login 에서 로그인한다. 라이더 계정이면 `/rider`(배달 중이면 `/rider/current`)로 이동한다. 예전 주소 `/rider/login`으로 들어와도 `/login`으로 넘어간다.
 

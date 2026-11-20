@@ -44,7 +44,7 @@ export default function RiderShell({ children }) {
           </div>
           {st && <Badge tone={st.tone}>{st.label}</Badge>}
         </header>
-        {USE_MOCK && <div className="rd-mockBar">목업 모드 · 실제 서버가 아닌 가짜 데이터예요</div>}
+        {USE_MOCK && <div className="rd-mockBar">목업 모드 · 실제 API에 연결하지 않고 시연 데이터를 사용해요</div>}
         <main className="rd-main">{me ? children : <Loading />}</main>
         <nav className="rd-nav" aria-label="라이더 메뉴">
           {TABS.map((t) => {

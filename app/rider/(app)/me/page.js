@@ -47,7 +47,7 @@ export default function RiderMePage() {
 
   async function doLogout() {
     await logout().catch(() => {});
-    router.replace('/rider/login');
+    router.replace(USE_MOCK ? '/rider/login' : '/login');
   }
 
   // A-07: 비밀번호 확인 → 성공하면 서버가 세션 쿠키를 지운다
@@ -58,7 +58,7 @@ export default function RiderMePage() {
     try {
       await withdraw(leave.password);
       toast('탈퇴했어요. 그동안 함께 달려 주셔서 고마워요');
-      router.replace('/rider/login?withdrawn=1'); // 실제 API면 통합 로그인(/login)에서 "탈퇴 완료" 문구가 뜬다
+      router.replace(USE_MOCK ? '/rider/login?withdrawn=1' : '/login?withdrawn=1');
     } catch (err) {
       // PASSWORD_MISMATCH, HAS_ACTIVE_ORDERS(배달 중) 등은 창 안에 그대로 보여 준다
       setLeave((l) => ({ ...l, busy: false, error: err.message }));
