@@ -53,17 +53,16 @@ npm.cmd run setup:server
 if (-not (Test-Path .env.local)) { Copy-Item .env.example .env.local }
 ```
 
-`.env.local`을 열어 다음 두 값이 있는지 확인합니다. 이미 다른 설정이 있다면 필요한 두 값만 맞춥니다.
+API 서버 주소가 기본값과 다르면 `.env.local`에서 아래 값을 바꿉니다.
 
 ```dotenv
 NEXT_PUBLIC_API_BASE=http://localhost:4000
-NEXT_PUBLIC_USE_MOCK=false
 ```
 
 - `API_BASE`에는 `/api`를 붙이지 않습니다. 관리자 코드가 경로에 `/api`를 추가합니다.
 - 환경변수를 바꾸면 Next.js 개발 서버를 껐다 켭니다.
 - 배포용 빌드 후 값을 바꿨다면 다시 빌드합니다.
-- 이번 관리자 코드는 환경변수가 없어도 기본적으로 실제 API를 사용하며, `NEXT_PUBLIC_USE_MOCK=true`를 명시한 경우에만 별도 시연 데이터 모드로 전환합니다.
+- `NEXT_PUBLIC_USE_MOCK=true`일 때만 별도 시연 데이터를 사용합니다. 환경변수가 없거나 `true` 외의 값이면 실제 API를 사용합니다.
 
 ### 3-3. SQLite 최초 생성
 
@@ -99,7 +98,7 @@ npm.cmd run dev:web
 
 브라우저에서 다음 주소를 엽니다.
 
-**[관리자 로그인 열기](http://localhost:3000/admin/login)**
+**[통합 로그인 열기](http://localhost:3000/login)**
 
 | 항목 | 초기 계정 |
 |---|---|
@@ -114,7 +113,7 @@ npm.cmd run dev:web
 
 | 화면 주소 | 기능 |
 |---|---|
-| `/admin/login` | 공통 로그인 API로 관리자 인증 |
+| `/login` (`/admin/login`은 목업용) | 공통 로그인 API로 관리자 인증 |
 | `/admin` | 대기 입점 신청·신고·활성 리뷰 제한 건수 |
 | `/admin/applications` | 입점 신청 조회·승인·반려 |
 | `/admin/reports` | 리뷰 신고 조회·숨김 또는 기각·작성자 제한 |
@@ -159,7 +158,7 @@ npm.cmd run dev:web
 | 상황 | 확인할 내용 |
 |---|---|
 | 화면만 열리고 로그인에 실패함 | 터미널 1에서 `dev:server`도 실행 중인지 확인합니다. |
-| 이전 시연 화면처럼 보임 | `.env.local`의 `NEXT_PUBLIC_USE_MOCK=false`를 확인하고 화면 서버를 다시 켭니다. |
+| 이전 시연 화면처럼 보임 | `.env.local`에서 `NEXT_PUBLIC_USE_MOCK=true` 설정을 제거하고 화면 개발 서버를 다시 켭니다. 배포용 화면은 다시 빌드합니다. |
 | `Failed to fetch` 또는 네트워크 오류 | API 주소·실행 상태와 CORS를 확인합니다. 기본 조합은 화면 `http://localhost:3000`, API `http://localhost:4000`입니다. |
 | 화면 주소가 `3001`로 바뀜 | 기본 API는 `http://localhost:3000`을 허용합니다. 3000번을 사용 중인 기존 화면 서버를 종료하고 다시 실행하거나 API의 허용 origin을 실제 주소에 맞춰야 합니다. |
 | 로그인 후 401 | 쿠키가 만료되었거나 유효하지 않을 수 있습니다. 두 서버를 같은 `localhost` 표기로 열고 다시 로그인합니다. |

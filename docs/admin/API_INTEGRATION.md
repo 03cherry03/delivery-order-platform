@@ -22,13 +22,12 @@
 
 ```dotenv
 NEXT_PUBLIC_API_BASE=http://localhost:4000
-NEXT_PUBLIC_USE_MOCK=false
 ```
 
 | 변수 | 관리자 코드의 처리 |
 |---|---|
 | `NEXT_PUBLIC_API_BASE` | 기본 `http://localhost:4000`. API 서버의 origin을 설정하며 `/api`는 붙이지 않음. |
-| `NEXT_PUBLIC_USE_MOCK` | 정확히 `true`일 때만 시연 모드. 그 외에는 실제 API 사용. |
+| `NEXT_PUBLIC_USE_MOCK` | 정확히 `true`일 때만 시연 모드. 미설정 또는 `true` 외의 값이면 실제 API 사용. |
 
 예를 들어 `getSummary()`는 `http://localhost:4000/api/admin/summary`를 요청합니다. 환경변수 변경 후 개발 서버를 다시 실행하고, 배포용으로 빌드한 경우에는 다시 빌드합니다.
 

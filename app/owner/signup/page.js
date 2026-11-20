@@ -2,9 +2,10 @@
 
 // A-06 사장 회원가입 — 회원 + 첫 가게 + 입점 신청을 한 번에 보낸다
 import Link from 'next/link';
+import { BRAND } from '@/lib/brand';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { signupOwner } from '@/lib/owner/api';
+import { signupOwner, USE_MOCK } from '@/lib/owner/api';
 import { Button, Card, Field, useToast } from '@/components/owner/ui';
 import StoreForm, { initialStore, storeBody } from '@/components/owner/StoreForm';
 import s from '../auth.styles';
@@ -29,7 +30,7 @@ export default function SignupPage() {
     try {
       await signupOwner({ ...acc, store: sb.body });
       toast('가입했어요. 입점 승인을 기다리는 동안 로그인할 수 있어요.');
-      router.push('/owner/login');
+      router.push(USE_MOCK ? '/owner/login?joined=1' : '/login?joined=1');
     } catch (err) {
       setErrors(err.fields || {});
       setFormError(err.message);
@@ -44,7 +45,7 @@ export default function SignupPage() {
       <form className={`${s.box} ${s.wide}`} onSubmit={submit}>
         <div className={s.brand}>
           <div className={s.logo}>사</div>
-          <span className={s.brandName}>사장님 센터</span>
+          <span className={s.brandName}>{BRAND.owner}</span>
         </div>
         <h1 className={s.title}>입점 신청</h1>
         <p className={s.sub}>가입하면 관리자 승인 후 영업을 시작할 수 있어요</p>

@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { getMyStores, logout } from '@/lib/owner/api';
+import { getMyStores, logout, USE_MOCK } from '@/lib/owner/api';
 import { APPROVAL_STATUS, OPER_STATUS } from '@/lib/owner/codes';
 import { useLoad, useMe } from '@/lib/owner/hooks';
 import { Badge, Button, Empty, Loading } from '@/components/owner/ui';
@@ -23,7 +23,7 @@ export default function StoreSelectPage() {
 
   async function onLogout() {
     await logout().catch(() => {});
-    router.replace('/owner/login');
+    router.replace(USE_MOCK ? '/owner/login' : '/login');
   }
 
   if (!me || !stores) return <Loading />;

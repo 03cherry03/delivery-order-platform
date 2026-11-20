@@ -50,7 +50,7 @@ export default function StoreForm({ value, onChange, errors = {} }) {
           <Field label="가게명" required error={err('storeName')}>
             <input className="input" value={value.storeName} onChange={set('storeName')} maxLength={50} />
           </Field>
-          <Field label="카테고리" required error={err('categoryCode')} hint="코드값은 아직 확정 전이에요">
+          <Field label="카테고리" required error={err('categoryCode')}>
             <select className="select" value={value.categoryCode} onChange={set('categoryCode')}>
               <option value="">선택해 주세요</option>
               {Object.entries(STORE_CATEGORY).map(([k, l]) => <option key={k} value={k}>{l}</option>)}

@@ -1,15 +1,15 @@
 # 라이더 화면 (/rider)
 
 라이더 화면 API 명세서(D-01~D-09)와 공통 인증(A-01~A-03)을 따라 만든 라이더용 화면입니다.
-사장 화면(`app/owner`)과 같은 방식으로 만들었습니다: 백엔드가 없어도 브라우저 안의 가짜 서버(목업)로 전체 흐름을 돌려 볼 수 있고, 백엔드가 붙으면 환경 변수 하나로 진짜 `/api`를 부릅니다.
+기본은 실제 Express API 연결이며, 목업 모드를 켜면 백엔드 없이 브라우저에서 전체 흐름을 확인할 수 있습니다.
 
-## 실행
+## 목업 모드로 실행
 
 ```
 npm run dev
 ```
 
-http://localhost:3000/rider/login 에서 아래 계정으로 로그인합니다. (비밀번호 모두 `test1234`, 로그인 화면의 버튼을 누르면 자동 입력)
+`.env.local`에 `NEXT_PUBLIC_USE_MOCK=true`를 설정한 뒤 실행합니다. 이미 화면 개발 서버를 켰다면 다시 켭니다. http://localhost:3000/rider/login 에서 아래 계정으로 로그인합니다. (비밀번호 모두 `test1234`, 로그인 화면의 버튼을 누르면 자동 입력)
 
 | 계정 | 처음 상태 | 확인할 수 있는 것 |
 | --- | --- | --- |
@@ -23,17 +23,18 @@ http://localhost:3000/rider/login 에서 아래 계정으로 로그인합니다.
 
 | 주소 | 화면 | 쓰는 API |
 | --- | --- | --- |
-| /rider/login | 로그인. 배달 중이면 현재 배달로, 아니면 배차 대기로 | A-01, D-02 |
+| /login (`/rider/login`은 목업용) | 로그인. 배달 중이면 현재 배달로, 아니면 배차 대기로 | A-01, D-02 |
 | /rider/signup | 라이더 회원가입 (운송수단, 활동 반경) | D-01, A-01 |
 | /rider | 배차 대기 목록, 5초마다 새로고침. 수락 전에 확인 창 | D-04, D-05 |
 | /rider/current | 현재 배달, 10초마다 새로고침. READY일 때만 [픽업 완료], DELIVERING일 때만 [배달 완료] | D-06, D-07, D-08 |
 | /rider/history | 배달 내역, 오늘 건수·배달팁 합계, 20건씩 더 보기 | D-09 |
-| /rider/me | 운송수단·활동 반경 수정(배달 중엔 막힘), 로그아웃 | D-02, D-03, A-02 |
+| /rider/me | 운송수단·활동 반경 수정(배달 중엔 막힘), 로그아웃, 회원 탈퇴(비밀번호 확인, 배달 중엔 막힘) | D-02, D-03, A-02, A-07 |
 
 오류는 명세서대로 `error.message`를 토스트로 보여 주고, `error.code`로 다음 행동을 나눕니다.
 - `ALREADY_DISPATCHED`, `ORDER_ALREADY_PROCESSED` → 목록·현재 배달을 다시 불러옴
 - `RIDER_BUSY` → 내 상태를 다시 불러옴
 - `NOT_READY`, `NOT_PICKED_UP` → 현재 배달을 다시 불러옴
+- `PASSWORD_MISMATCH`, `HAS_ACTIVE_ORDERS` → 탈퇴 창 안에 메시지 표시
 - 보고 있던 배달이 D-06에서 `null`로 바뀌면(내가 완료한 게 아니면) "주문이 취소되었다"고 알림
 - 401·403 → 로그인 화면으로
 
@@ -44,19 +45,22 @@ http://localhost:3000/rider/login 에서 아래 계정으로 로그인합니다.
 - 새 요청 중 일부는 1분쯤 뒤 다른 라이더가 가져갑니다 (목록에서 사라짐)
 - 데이터는 브라우저 localStorage(`rider-mock-db-v1`)에 저장됩니다. 처음 상태로 돌리려면 [내 정보] 아래 "목업 데이터 처음 상태로"
 
-## 백엔드 연결
+## 실제 API로 실행 (server/ Express)
 
-프로젝트 루트에 `.env.local`을 만들고 아래를 넣은 뒤 `npm run dev`를 다시 켭니다.
+루트 README 순서대로 `npm run setup:server` → `npm run db:init`을 하고 터미널 두 개에서 `npm run dev:server`, `npm run dev:web`을 켠다. `NEXT_PUBLIC_USE_MOCK`을 설정하지 않거나 값이 `true`가 아니면 "목업 모드" 띠가 표시되지 않고 기본 주소 `http://localhost:4000/api/...`를 부른다(세션 쿠키, `credentials: 'include'`).
 
-```
-NEXT_PUBLIC_USE_MOCK=false
-# Next.js와 다른 주소에서 백엔드가 돌면 (같은 Next.js 안의 app/api 라면 필요 없음)
-# NEXT_PUBLIC_API_BASE=http://localhost:4000
-```
+실제 API 모드에서는 통합 로그인 http://localhost:3000/login 에서 로그인한다. 라이더 계정이면 `/rider`(배달 중이면 `/rider/current`)로 이동한다. 예전 주소 `/rider/login`으로 들어와도 `/login`으로 넘어간다.
 
-- 요청은 `fetch('/api/...', { credentials: 'include' })` 로 보냅니다 (세션 쿠키)
-- D-04는 명세서 메모대로 `lat`, `lng`을 보내지 않습니다. 서버가 숭실대 좌표(37.4963, 126.9575)를 씁니다
-- 응답 모양은 명세서 그대로 `{ success, data }` / `{ success: false, error: { code, message, fields } }` 를 기대합니다
+server/db/seed.sql 기준 라이더 계정 (비밀번호 test1234)
+
+| 계정 | 처음 상태 | 확인할 수 있는 것 |
+| --- | --- | --- |
+| rider1@test.com | 배달 중, 배차받은 주문이 조리중 | 픽업 버튼 비활성, 탈퇴 막힘 |
+| rider2@test.com | 배달 중, 조리 완료(READY) | [픽업 완료] → [배달 완료] |
+| rider3@test.com | 픽업 후 배달 중 | [배달 완료], 이후 탈퇴 가능 |
+| rider4@test.com | 배차 대기, 도보·반경 0.5km | 반경을 넓혀 배차 대기 목록 확인·수락 |
+
+D-04는 명세서 메모대로 `lat`, `lng`을 보내지 않는다. 서버가 숭실대 좌표(37.4963, 126.9575)를 쓴다.
 
 ## 파일
 

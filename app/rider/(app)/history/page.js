@@ -1,10 +1,10 @@
 'use client';
 
-// D-09 배달 내역 (완료한 배달만, 최신순, 페이지 20건) + 오늘 완료 건수·배달팁 합계
+// D-09 배달 내역 (완료한 배달만, 최신순, 페이지 20건) + 일·주·월 완료 건수·배달팁 합계
 import { useEffect, useState } from 'react';
 import { getDeliveryHistory } from '@/lib/rider/api';
 import { won, mdhm, hm, parseDT, toDate } from '@/lib/rider/format';
-import { Button, Empty, Loading, LoadError } from '@/components/rider/ui';
+import { Button, Card, Empty, Loading, LoadError } from '@/components/rider/ui';
 
 const SIZE = 20;
 
@@ -75,6 +75,23 @@ export default function HistoryPage() {
               <p className="rd-todayVal">{first.totalCount}<small>건</small></p>
             </div>
           </section>
+
+          <Card title={<h2>배달 실적</h2>}>
+            <dl className="rd-periods">
+              {[
+                ['이번 주', first.summary.thisWeek],
+                ['이번 달', first.summary.thisMonth],
+              ].map(([label, period]) => (
+                <div key={label}>
+                  <dt className="rd-todayLabel">{label}</dt>
+                  <dd>
+                    <p className="rd-todayVal">{won(period.tipAmount)}</p>
+                    <p className="rd-todayLabel">{period.count.toLocaleString('ko-KR')}건 완료</p>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
 
           {items.length === 0 && <Empty mark="✓" title="아직 완료한 배달이 없어요">첫 배달을 완료하면 여기에 쌓여요.</Empty>}
 

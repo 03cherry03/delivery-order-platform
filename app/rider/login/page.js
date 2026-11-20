@@ -2,12 +2,19 @@
 
 // A-01 로그인 → D-02로 상태 확인 → 배달 중(BUSY)이면 현재 배달, 아니면 배차 대기 목록
 import Link from 'next/link';
+import { BRAND } from '@/lib/brand';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { login, getRiderMe, logout, USE_MOCK } from '@/lib/rider/api';
 import { Button, Field } from '@/components/rider/ui';
+import ToUnifiedLogin from '@/components/auth/ToUnifiedLogin';
 
+// 실제 API를 쓸 때는 통합 로그인(/login)을 쓴다. 목업 모드에서만 이 화면을 보여 준다.
 export default function RiderLoginPage() {
+  return USE_MOCK ? <RiderMockLogin /> : <ToUnifiedLogin />;
+}
+
+function RiderMockLogin() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,8 +47,8 @@ export default function RiderLoginPage() {
     <main className="rd-auth">
       <div className="rd-authBox">
         <div className="rd-brand">
-          <div className="rd-logo">R</div>
-          <span className="rd-brandName">라이더</span>
+          <div className="rd-logo">라</div>
+          <span className="rd-brandName">{BRAND.rider}</span>
         </div>
         <h1 className="rd-authTitle">오늘도<br />안전하게 달려요</h1>
         <p className="rd-authSub">가까운 배차를 잡고, 픽업부터 완료까지 한 화면에서</p>
@@ -56,16 +63,14 @@ export default function RiderLoginPage() {
           <Button type="submit" size="lg" full disabled={busy}>{busy ? '확인하는 중' : '로그인'}</Button>
         </form>
         <p className="rd-authFoot">처음이신가요?<Link href="/rider/signup">라이더 회원가입</Link></p>
-        {USE_MOCK && (
-          <div className="rd-demo">
-            <p>목업 모드 · 테스트 계정 (비밀번호 test1234)</p>
-            <div className="rd-demoBtns">
-              <button type="button" onClick={() => fill(1)}>rider1 · 배차 대기</button>
-              <button type="button" onClick={() => fill(2)}>rider2 · 배달 중</button>
-              <button type="button" onClick={() => fill(3)}>rider3 · 픽업 전</button>
-            </div>
+        <div className="rd-demo">
+          <p>목업 모드 · 테스트 계정 (비밀번호 test1234)</p>
+          <div className="rd-demoBtns">
+            <button type="button" onClick={() => fill(1)}>rider1 · 배차 대기</button>
+            <button type="button" onClick={() => fill(2)}>rider2 · 배달 중</button>
+            <button type="button" onClick={() => fill(3)}>rider3 · 픽업 전</button>
           </div>
-        )}
+        </div>
       </div>
     </main>
   );

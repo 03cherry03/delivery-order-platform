@@ -1,0 +1,73 @@
+/* 공용 디자인 토큰 — 고객·사장님·라이더·관리자·로그인 화면이 같이 쓴다.
+   색 하나를 바꾸려면 여기만 고치면 된다. 각 화면 CSS는 이 변수를 가져다 쓴다.
+   (사장님·라이더 화면에서 쓰던 값을 기준으로 옮겼다) */
+:root {
+  /* 브랜드 민트 */
+  --mint1: #e6fff8;
+  --mint2: #b0ffeb;
+  --mint5: #0cefd3;
+  --mint6: #00c9b9;
+  --mint7: #00a39b;
+  --mint8: #007d7b;
+  --primary: var(--mint5);
+  --primary-hover: oklch(0.69 0.13 184);
+  --primary-tint: oklch(0.97 0.05 178);
+
+  /* 쓰임별 액센트 */
+  --navy: oklch(0.30 0.13 286);
+  --navy-tint: oklch(0.94 0.04 287);
+  --red: oklch(0.63 0.24 27);
+  --red-tint: oklch(0.94 0.04 27);
+  --orange: #ff8400;
+  --orange-tint: #fff5ed;
+  --blue: #1a7cff;
+  --blue-tint: #edf7ff;
+  --green: #00b96b;
+  --green-tint: #edfdf4;
+  --star-gold: oklch(0.82 0.16 85);
+
+  /* 무채색 */
+  --bg-page: oklch(0.97 0 286);
+  --bg-surface: #ffffff;
+  --bg-subtle: oklch(0.96 0 286);
+  --bg-pressed: oklch(0.94 0 286);
+  --bg-inverse: oklch(0.18 0 0);
+  --fg-1: oklch(0.18 0 0);
+  --fg-2: oklch(0.34 0 0);
+  --fg-3: oklch(0.55 0 0);
+  --fg-4: oklch(0.71 0 0);
+  --border-1: oklch(0.94 0 286);
+  --border-2: oklch(0.87 0 286);
+
+  /* 배지 색 (주문 상태 등) — 글자색 / 배경색 */
+  --tone-mint-fg: var(--mint8);     --tone-mint-bg: var(--primary-tint);
+  --tone-orange-fg: #bb4500;        --tone-orange-bg: var(--orange-tint);
+  --tone-blue-fg: #0f59b7;          --tone-blue-bg: var(--blue-tint);
+  --tone-navy-fg: var(--navy);      --tone-navy-bg: var(--navy-tint);
+  --tone-red-fg: #bb2523;           --tone-red-bg: var(--red-tint);
+  --tone-gray-fg: var(--fg-2);      --tone-gray-bg: var(--bg-subtle);
+
+  /* 간격 (4px 기준) */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px;
+  --s6: 24px; --s7: 32px; --s8: 40px; --s9: 48px;
+
+  /* 라운드 */
+  --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px; --r-2xl: 24px;
+  --r-pill: 9999px;
+
+  /* 그림자 */
+  --shadow-1: 0 1px 2px oklch(0.18 0 0 / 0.04);
+  --shadow-2: 0 4px 12px oklch(0.18 0 0 / 0.06);
+  --shadow-3: 0 8px 24px oklch(0.18 0 0 / 0.08);
+
+  /* 움직임 */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur: 200ms;
+
+  /* 글꼴 */
+  --font-body: "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Roboto, sans-serif;
+
+  /* 모바일 앱 틀 (고객·사장님·라이더) */
+  --app-w: 480px;
+  --nav-h: 64px;
+}

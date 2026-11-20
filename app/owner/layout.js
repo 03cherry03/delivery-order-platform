@@ -13,17 +13,15 @@ import './[storeId]/store/store.css';
 import './auth.css';
 import './stores/stores.css';
 import { ToastProvider } from '@/components/owner/ui';
+import { BRAND } from '@/lib/brand';
 
 export const metadata = {
-  title: '사장님 센터',
+  title: BRAND.owner,
 };
 
 export default function OwnerLayout({ children }) {
   return (
     <div className="owner-root">
-      {/* Pretendard 폰트 (React 19가 <head>로 올려 준다) */}
-      <link rel="stylesheet" precedence="default"
-        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
       <ToastProvider>{children}</ToastProvider>
     </div>
   );

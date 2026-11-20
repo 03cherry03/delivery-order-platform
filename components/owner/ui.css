@@ -27,12 +27,12 @@
   display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
   border-radius: var(--r-pill); font-size: 11px; font-weight: 700; white-space: nowrap;
 }
-.ow-c-ui-tone-mint { background: var(--primary-tint); color: var(--mint8); }
-.ow-c-ui-tone-orange { background: var(--orange-tint); color: #bb4500; }
-.ow-c-ui-tone-blue { background: var(--blue-tint); color: #0f59b7; }
-.ow-c-ui-tone-navy { background: var(--navy-tint); color: var(--navy); }
-.ow-c-ui-tone-red { background: var(--red-tint); color: #bb2523; }
-.ow-c-ui-tone-gray { background: var(--bg-subtle); color: var(--fg-2); }
+.ow-c-ui-tone-mint { background: var(--tone-mint-bg); color: var(--tone-mint-fg); }
+.ow-c-ui-tone-orange { background: var(--tone-orange-bg); color: var(--tone-orange-fg); }
+.ow-c-ui-tone-blue { background: var(--tone-blue-bg); color: var(--tone-blue-fg); }
+.ow-c-ui-tone-navy { background: var(--tone-navy-bg); color: var(--tone-navy-fg); }
+.ow-c-ui-tone-red { background: var(--tone-red-bg); color: var(--tone-red-fg); }
+.ow-c-ui-tone-gray { background: var(--tone-gray-bg); color: var(--tone-gray-fg); }
 .ow-c-ui-tone-solid { background: var(--fg-1); color: var(--bg-surface); }
 
 /* ── 카드 ── */
@@ -64,24 +64,25 @@
 /* ── 모달 ── */
 .ow-c-ui-overlay {
   position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 50;
-  display: flex; align-items: center; justify-content: center; padding: var(--s4);
+  display: flex; align-items: flex-end; justify-content: center;
   animation: ow-fade var(--dur) var(--ease-out);
 }
+/* 모바일 화면이라 라이더 화면처럼 아래에서 올라오는 시트로 연다 */
 .ow-c-ui-modal {
-  background: var(--bg-surface); border-radius: var(--r-2xl); width: 100%; max-width: 440px;
-  max-height: calc(100vh - 32px); overflow-y: auto; padding: var(--s6);
+  background: var(--bg-surface); border-radius: var(--r-2xl) var(--r-2xl) 0 0; width: 100%; max-width: var(--app-w);
+  max-height: calc(100vh - 32px); overflow-y: auto; padding: var(--s6) var(--s5) calc(var(--s5) + env(safe-area-inset-bottom));
   animation: ow-rise var(--dur) var(--ease-out);
 }
-.ow-c-ui-modalWide { max-width: 560px; }
+.ow-c-ui-modalWide { max-width: var(--app-w); }
 .ow-c-ui-modalTitle { font-size: 20px; font-weight: 800; margin-bottom: var(--s2); }
 .ow-c-ui-modalDesc { color: var(--fg-3); font-size: 14px; margin-bottom: var(--s5); }
 .ow-c-ui-modalActions { display: flex; gap: var(--s2); margin-top: var(--s6); }
 .ow-c-ui-modalActions > * { flex: 1; }
 @keyframes ow-fade { from { opacity: 0; } }
-@keyframes ow-rise { from { opacity: 0; transform: translateY(8px); } }
+@keyframes ow-rise { from { opacity: 0; transform: translateY(16px); } }
 
 /* ── 토스트: 검정 캡슐 ── */
-.ow-c-ui-toastWrap { position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+.ow-c-ui-toastWrap { position: fixed; left: 50%; bottom: calc(var(--nav-h) + 24px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
 .ow-c-ui-toast {
   background: var(--bg-inverse); color: rgba(255, 255, 255, 0.9);
   padding: 12px 20px; border-radius: var(--r-pill); font-size: 14px; font-weight: 600;

@@ -110,6 +110,7 @@ function ReviewCard({ r, storeId, onChanged, onReport }) {
   const [mode, setMode] = useState(null); // 'write' | 'edit'
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   async function act(fn, msg) {
     setBusy(true);
@@ -140,7 +141,7 @@ function ReviewCard({ r, storeId, onChanged, onReport }) {
             {!r.hidden && (
               <span className={s.replyActions}>
                 <Button variant="text" size="sm" onClick={() => { setText(r.reply.content); setMode('edit'); }}>수정</Button>
-                <Button variant="text" size="sm" disabled={busy} onClick={() => act(() => deleteReply(storeId, r.reviewId), '답글을 삭제했어요')}>삭제</Button>
+                <Button variant="text" size="sm" disabled={busy} onClick={() => setConfirmDelete(true)}>삭제</Button>
               </span>
             )}
           </div>
@@ -167,6 +168,16 @@ function ReviewCard({ r, storeId, onChanged, onReport }) {
           </div>
         </div>
       )}
+
+      <Modal open={confirmDelete} title="답글을 삭제할까요?" onClose={() => setConfirmDelete(false)}>
+        <ModalActions>
+          <Button variant="ghost" size="md" autoFocus onClick={() => setConfirmDelete(false)}>취소</Button>
+          <Button variant="danger" size="md" onClick={() => {
+            setConfirmDelete(false);
+            act(() => deleteReply(storeId, r.reviewId), '답글을 삭제했어요');
+          }}>삭제</Button>
+        </ModalActions>
+      </Modal>
     </article>
   );
 }

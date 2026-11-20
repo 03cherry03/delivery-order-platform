@@ -55,7 +55,6 @@
 .ow-storeId-orders-orders-check { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 14px; cursor: pointer; }
 .ow-storeId-orders-orders-check input { width: 18px; height: 18px; accent-color: var(--fg-1); }
 
-@media (max-width: 900px) {
-  .ow-storeId-orders-orders-split { grid-template-columns: 1fr; }
-  .ow-storeId-orders-orders-detail { position: static; max-height: none; }
-}
+/* 원래 (max-width: 900px) 에서만 쓰던 규칙 — 모바일 화면이라 항상 적용 */
+.ow-storeId-orders-orders-split { grid-template-columns: 1fr; }
+.ow-storeId-orders-orders-detail { position: static; max-height: none; }

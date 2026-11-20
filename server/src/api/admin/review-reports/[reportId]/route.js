@@ -11,7 +11,7 @@ export const GET = handler(({ request, params }) => {
   const reportId = pathId(params.reportId, "reportId");
   expireWaitingOrders();
   const row = db.prepare(`SELECT p.*, r.RVW_RTNG, r.RVW_CN, r.REG_DTTM AS REVIEW_DTTM,
-    r.RVW_HDN_YN, o.ORD_ID, o.ORD_STTS, m.MBR_ID, m.MBR_NM, d.DLVR_CMPL_DTTM,
+    r.RVW_HDN_YN, r.DEL_YN, o.ORD_ID, o.ORD_STTS, m.MBR_ID, m.MBR_NM, d.DLVR_CMPL_DTTM,
     (SELECT COUNT(*) FROM TB_RVW hidden JOIN TB_ORD own ON own.ORD_ID = hidden.ORD_ID
       WHERE own.MBR_ID = m.MBR_ID AND hidden.RVW_HDN_YN = 'Y') AS hiddenReviewCount,
     EXISTS (SELECT 1 FROM TB_MBR_RSTR restriction WHERE restriction.MBR_ID = m.MBR_ID
@@ -24,7 +24,7 @@ export const GET = handler(({ request, params }) => {
     .all(row.ORD_ID).map((item) => item.ORD_MENU_NM).join(", ");
   return {
     reportId, reason: row.RVW_RPT_RSN_CD, content: row.RVW_RPT_CN,
-    reportedAt: row.REG_DTTM, status: row.RVW_RPT_STTS,
+    reportedAt: row.REG_DTTM, status: row.RVW_RPT_STTS, reviewDeleted: row.DEL_YN === "Y",
     review: { reviewId: row.RVW_ID, rating: row.RVW_RTNG, content: row.RVW_CN,
       createdAt: row.REVIEW_DTTM, hidden: row.RVW_HDN_YN === "Y" },
     order: { orderId: row.ORD_ID, status: row.ORD_STTS, deliveredAt: row.DLVR_CMPL_DTTM, menus },

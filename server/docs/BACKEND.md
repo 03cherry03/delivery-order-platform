@@ -139,7 +139,7 @@ server 폴더에서 API를 직접 개발 실행하려면 `cd server && npm run d
 | 실행 위치 | 이름 | 기본값·설정 방법 | 운영 조건 |
 |---|---|---|---|
 | 루트 Next.js | `NEXT_PUBLIC_API_BASE` | `.env.example`을 `.env.local`로 복사한다. 예시 값은 `http://localhost:4000`이다. | 실제 API origin으로 설정하고 화면을 다시 빌드한다. 끝에 `/api`를 붙이지 않는다. |
-| 루트 Next.js | `NEXT_PUBLIC_USE_MOCK` | 같은 로컬 파일의 예시 값은 `false`다. | 실제 API를 쓰려면 `false`로 설정한다. |
+| 루트 Next.js | `NEXT_PUBLIC_USE_MOCK` | `true`일 때만 목업 모드다. 미설정 또는 `true` 외의 값이면 실제 API를 사용한다. | 실제 API가 기본이다. |
 | server Express | `PORT` | 프로세스 환경변수. 기본 4000. 운영 시작에서는 `server/.env`도 읽는다. | API가 받을 포트로 지정한다. |
 | server Express | `CORS_ORIGINS` | 기본 `http://localhost:3000`. 여러 origin은 쉼표로 나눈다. | 실제 화면 origin을 명시한다. `*`는 서버 시작 때 거부한다. |
 | server Express | `SESSION_SECRET` | 프로세스 환경변수 또는 운영 시작이 읽는 `server/.env`. 개발에서만 기본 키를 쓴다. | 충분히 긴 비밀 키가 필수다. 없으면 서버가 시작하지 않고 종료 코드 1로 끝난다. |
@@ -168,7 +168,6 @@ server 폴더에서 API를 직접 개발 실행하려면 `cd server && npm run d
 
 ```sh
 NEXT_PUBLIC_API_BASE=http://localhost:4000
-NEXT_PUBLIC_USE_MOCK=false
 ```
 
 - 환경변수를 바꾸면 Next.js 개발 서버를 다시 켠다.

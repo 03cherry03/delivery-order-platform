@@ -446,7 +446,7 @@
 
 - method/path: `GET /api/rider/deliveries/history`
 - 권한: RIDER
-- 설명: 내가 완료한 배달만 페이지로 조회한다. 오늘 건수·배달팁 합계는 페이지와 무관한 전체 오늘 완료분이다.
+- 설명: 내가 완료한 배달만 페이지로 조회한다. 오늘·이번 주·이번 달 완료 건수와 배달팁 합계는 페이지와 무관하다.
 
 ### 요청
 
@@ -457,10 +457,24 @@
 
 ### 응답
 
-200. 내역이 없으면 `items: []`, `totalCount: 0`. 오늘 완료가 없으면 `todayCount: 0`, `todayTipSum: 0`.
+200. 내역이 없으면 `items: []`, `totalCount: 0`. 합산 기간에 완료한 배달이 없으면 해당 건수와 배달팁 합계는 0이다. 기간은 서버 현지 날짜 기준이며 시작일과 종료일을 모두 포함한다.
 
 ```json
-{ "success": true, "data": { "items": [{ "deliveryId": 205, "orderId": 1042, "storeName": "상도치킨", "deliveryAddress": "서울 동작구 상도동 123", "deliveryTip": 3000, "pickedUpAt": "2026-11-24 18:44:00", "completedAt": "2026-11-24 19:01:00" }], "page": 1, "size": 20, "totalCount": 37, "todayCount": 5, "todayTipSum": 15000 } }
+{
+  "success": true,
+  "data": {
+    "items": [{ "deliveryId": 205, "orderId": 1042, "storeName": "상도치킨", "deliveryAddress": "서울 동작구 상도동 123", "deliveryTip": 3000, "pickedUpAt": "2026-11-24 18:44:00", "completedAt": "2026-11-24 19:01:00" }],
+    "page": 1,
+    "size": 20,
+    "totalCount": 37,
+    "todayCount": 5,
+    "todayTipSum": 15000,
+    "summary": {
+      "thisWeek": { "from": "2026-11-23", "to": "2026-11-29", "count": 8, "tipAmount": 23000 },
+      "thisMonth": { "from": "2026-11-01", "to": "2026-11-30", "count": 23, "tipAmount": 64000 }
+    }
+  }
+}
 ```
 
 | 필드 | 타입 | 설명 (출처 컬럼 또는 계산식) |
@@ -476,8 +490,16 @@
 | page | number | 적용한 페이지 번호 |
 | size | number | 적용한 페이지 크기 |
 | totalCount | number | 페이지 제한 전 내 DONE 배달 전체 건수 |
-| todayCount | number | 내 DONE 배달 중 한국 시간 오늘 날짜에 `TB_DLVR.DLVR_CMPL_DTTM`이 속하는 전체 건수 |
+| todayCount | number | 내 완료 배달 중 `TB_DLVR.DLVR_CMPL_DTTM`이 서버 현지 날짜 기준으로 오늘인 전체 건수 |
 | todayTipSum | number | todayCount 대상의 `TB_ORD.DLVR_TIP_AMT` 합계. 없으면 0 |
+| summary.thisWeek.from | string | 이번 주 월요일 (`YYYY-MM-DD`) |
+| summary.thisWeek.to | string | 이번 주 일요일 (`YYYY-MM-DD`) |
+| summary.thisWeek.count | number | 이번 주에 완료한 전체 배달 건수 |
+| summary.thisWeek.tipAmount | number | 이번 주 배달팁 합계(원) |
+| summary.thisMonth.from | string | 이번 달 1일 (`YYYY-MM-DD`) |
+| summary.thisMonth.to | string | 이번 달 말일 (`YYYY-MM-DD`) |
+| summary.thisMonth.count | number | 이번 달에 완료한 전체 배달 건수 |
+| summary.thisMonth.tipAmount | number | 이번 달 배달팁 합계(원) |
 
 ### 오류
 
@@ -490,6 +512,6 @@
 ### DB 처리
 
 - 읽는 테이블: `TB_MBR`, `TB_DLVR`, `TB_ORD`, `TB_STORE` / 바꾸는 테이블: 조회 전 만료 취소의 `TB_ORD`와 트리거 연쇄 대상 `TB_PAY`, `TB_MBR`, `TB_PNT_TXN`, `TB_RIDER`.
-- 트랜잭션: 조회 전 만료 취소와 트리거 처리는 하나의 쓰기 트랜잭션. items·totalCount·오늘 합계는 같은 읽기 범위에서 조회한다.
-- 서버 검사: `TB_DLVR.RIDER_MBR_ID=세션 회원 ID`이고 `TB_ORD.ORD_STTS='DONE'`인 배달만 포함. 취소·진행 중 배달 제외. 오늘 합계에도 같은 소유자·완료 조건을 적용하고 페이지 조건은 적용하지 않는다.
-- 상태 변경 / VIEW·트리거: `TB_DLVR.DLVR_CMPL_DTTM` 내림차순, `LIMIT size OFFSET (page-1)*size`. VIEW 사용 없음. 만료 취소는 공통 규칙의 `TRG_ORD_CANCEL` 처리.
+- 트랜잭션: 조회 전 만료 취소와 트리거 처리는 하나의 쓰기 트랜잭션. `items`, `totalCount`, 오늘·주간·월간 합계는 같은 읽기 트랜잭션에서 조회한다.
+- 서버 검사: 로그인한 라이더의 배달만 포함한다. 목록과 집계 모두 `V_RIDER_DONE_DELIVERY`에서 주문 상태 `DONE` 및 배달 완료 일시를 확인한다. 집계에는 페이지 조건을 적용하지 않는다.
+- 상태 변경 / VIEW·트리거: `V_RIDER_DONE_DELIVERY`의 완료 일시와 배달 ID 내림차순으로 `LIMIT size OFFSET (page-1)*size`를 적용한다. 주간·월간 합계는 VIEW의 `WEEK_START_DT`, `MONTH` 기준으로 집계한다. 만료 취소는 공통 규칙의 `TRG_ORD_CANCEL` 처리.

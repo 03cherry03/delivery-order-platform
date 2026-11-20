@@ -27,3 +27,23 @@ SELECT o.ORD_ID,
   FROM TB_ORD o
   JOIN TB_DLVR d ON d.ORD_ID = o.ORD_ID
  WHERE o.ORD_STTS = 'DONE';
+
+-- 라이더별 완료 배달. D-09 배달 내역과 날짜·주·월 집계의 공통 기준.
+-- 완료 일시는 저장된 현지 시간 그대로 사용하며, 주의 시작은 월요일이다.
+CREATE VIEW V_RIDER_DONE_DELIVERY AS
+SELECT d.DLVR_ID,
+       d.RIDER_MBR_ID,
+       o.ORD_ID,
+       o.STORE_ID,
+       o.DLVR_ADDR,
+       d.PKUP_DTTM,
+       d.DLVR_CMPL_DTTM,
+       date(d.DLVR_CMPL_DTTM) AS CMPL_DT,
+       date(d.DLVR_CMPL_DTTM, 'weekday 0', '-6 days') AS WEEK_START_DT,
+       strftime('%Y-%m', d.DLVR_CMPL_DTTM) AS MONTH,
+       o.DLVR_TIP_AMT
+  FROM TB_DLVR d
+  JOIN TB_ORD o ON o.ORD_ID = d.ORD_ID
+ WHERE o.ORD_STTS = 'DONE'
+   AND d.RIDER_MBR_ID IS NOT NULL
+   AND d.DLVR_CMPL_DTTM IS NOT NULL;

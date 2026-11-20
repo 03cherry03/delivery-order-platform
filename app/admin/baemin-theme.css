@@ -1,16 +1,18 @@
 /* Reference: https://www.getdesign.kr/services/baemin
    Theme tokens applied to the administrator workspace only. */
 .admin-root {
-  --adm-mint: oklch(0.88 0.18 178);
-  --adm-mint-hover: oklch(0.69 0.13 184);
-  --adm-mint-soft: oklch(0.97 0.05 178);
-  --adm-mint-dark: oklch(0.40 0.07 191);
-  --adm-navy: oklch(0.30 0.13 286);
-  --adm-ink: oklch(0.18 0 0);
-  --adm-muted: #66696e;
-  --adm-line: #e9e9ed;
-  --adm-bg: oklch(0.97 0.00 286);
-  --adm-radius: 16px;
+  /* 공용 토큰(app/tokens.css)에 연결한다. 관리자 화면 CSS는 --adm-* 이름을 그대로 쓴다. */
+  --adm-mint: var(--primary);
+  --adm-mint-hover: var(--primary-hover);
+  --adm-mint-soft: var(--primary-tint);
+  --adm-mint-dark: var(--mint8);
+  --adm-navy: var(--navy);
+  --adm-ink: var(--fg-1);
+  --adm-muted: var(--fg-3);
+  --adm-line: var(--border-1);
+  --adm-bg: var(--bg-page);
+  --adm-radius: var(--r-lg);
+  font-family: var(--font-body);
 }
 .adm-btn { border-radius: 9999px; }
 .adm-btn-primary { color: #151718; }
@@ -24,14 +26,14 @@
 .adm-stat-top,.adm-stat-card p,.adm-eyebrow,.adm-queue-body small,
 .adm-guide p,.adm-footer-note,.adm-table th,.adm-keyvalues dt,
 .adm-login-sub,.adm-login-foot,.adm-hint,.adm-caption { color: var(--adm-muted); }
-.adm-quick-card { background: var(--adm-navy); border-color: transparent; color: #fff; }
+.adm-quick-card { background: var(--adm-navy); border-color: transparent; color: var(--bg-surface); }
 .adm-quick-card p { color: #dedbf0; }
-.adm-quick-card .adm-btn-outline { color: var(--adm-navy); border-color: #fff; }
+.adm-quick-card .adm-btn-outline { color: var(--adm-navy); border-color: var(--bg-surface); }
 .adm-login-visual { background: var(--adm-mint); }
 .adm-login-visual > p { color: #175849; }
 .adm-login-visual::after { border-color: #ffffff55; }
 .adm-login-graphic > span { color: var(--adm-navy); }
-.adm-login-graphic > span:nth-child(2) { background: var(--adm-navy); color: #fff; }
+.adm-login-graphic > span:nth-child(2) { background: var(--adm-navy); color: var(--bg-surface); }
 .adm-toast { border-radius: 9999px; background: #202023; }
 .adm-toast-error { background: #7d2929; }
 @media (max-width:760px) { .adm-sheet { border-radius: 0; } }
