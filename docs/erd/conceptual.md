@@ -4,7 +4,7 @@
 
 - 기준: `main` 커밋 `c9f4ae0`(PR #7 merge)의 `server/db/schema.sql`
 - 그림 두 가지
-  - 아래 "ER 다이어그램": 까마귀발(Crow's Foot) 표기. Markdown에서 바로 보인다.
+  - 아래 "ER 다이어그램": 까마귀발(Crow's Foot) 표기. Markdown에서 바로 보인다. 같은 그림을 `conceptual-erd.png`로도 저장했다.
   - `conceptual.drawio`: Chen 표기(엔터티 사각형, 관계 마름모, 속성 타원). [diagrams.net](https://app.diagrams.net)에서 연다.
 - 규모: 엔터티 21개, 관계 35개
 
