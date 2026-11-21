@@ -1,0 +1,667 @@
+// 배달 주문 플랫폼 물리 ERD (SQLite). docs/erd/gen-dbml.mjs 로 생성. 직접 고치지 말고 SQL 을 고친 뒤 다시 생성한다.
+Project delivery_order_platform {
+  database_type: 'SQLite'
+  Note: '''
+배달 주문 플랫폼 물리 데이터 모델.
+원본: server/db/schema.sql, views.sql, triggers.sql
+테이블은 STRICT, 일시는 TEXT 'YYYY-MM-DD HH:MM:SS', 금액은 원 단위 INTEGER.
+VIEW 는 VIEW 묶음의 가상 테이블로, 트리거는 테이블 note 와 메모로 표시한다.
+'''
+}
+
+Table TB_MBR {
+  MBR_ID INTEGER [pk, increment]
+  MBR_EMAIL TEXT [not null, note: '활성 회원 사이에서만 UNIQUE (UK_MBR_EMAIL_ACTIVE)']
+  MBR_PWD TEXT [note: '탈퇴 시 NULL']
+  MBR_NM TEXT [not null, note: '탈퇴 시 \'탈퇴회원\'']
+  MBR_TELNO TEXT [note: '탈퇴 시 NULL']
+  MBR_ROLE_CD TEXT [not null, check: `MBR_ROLE_CD IN ('CUSTOMER', 'OWNER', 'RIDER', 'ADMIN')`]
+  MBR_STTS TEXT [not null, default: 'ACTIVE', check: `MBR_STTS IN ('ACTIVE', 'WITHDRAWN')`]
+  PNT_BAL_AMT INTEGER [not null, default: 0, check: `PNT_BAL_AMT >= 0`]
+  MBR_LOGIN_DTTM TEXT
+  MBR_WTHDR_DTTM TEXT
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  DEL_YN TEXT [not null, default: 'N', check: `DEL_YN IN ('Y', 'N')`]
+  checks {
+    `(MBR_STTS = 'WITHDRAWN') = (MBR_WTHDR_DTTM IS NOT NULL)`
+    `MBR_STTS = 'WITHDRAWN' OR (MBR_PWD IS NOT NULL AND MBR_TELNO IS NOT NULL)`
+    `MBR_STTS = 'ACTIVE' OR (MBR_PWD IS NULL AND MBR_TELNO IS NULL)`
+  }
+  indexes {
+    MBR_EMAIL [name: 'UK_MBR_EMAIL_ACTIVE', note: '조건부 UNIQUE: WHERE 조건을 만족하는 행 사이에서만 유일. CREATE UNIQUE INDEX UK_MBR_EMAIL_ACTIVE ON TB_MBR (MBR_EMAIL) WHERE MBR_STTS = \'ACTIVE\'']
+  }
+  Note: '1 회원 / 탈퇴 ⇔ 탈퇴일시, 활성 회원은 비밀번호·전화번호 필수, 탈퇴 회원은 비움 / 트리거: TRG_MBR_MOD_DTTM'
+}
+
+Table TB_MBR_ADDR {
+  MBR_ADDR_ID INTEGER [pk, increment]
+  MBR_ID INTEGER [not null]
+  MBR_ADDR_NM TEXT [not null]
+  MBR_ADDR TEXT [not null]
+  MBR_DADDR TEXT
+  MBR_ZIP TEXT [not null, check: `MBR_ZIP GLOB '[0-9][0-9][0-9][0-9][0-9]'`]
+  MBR_LAT REAL [not null, check: `MBR_LAT BETWEEN -90 AND 90`]
+  MBR_LNG REAL [not null, check: `MBR_LNG BETWEEN -180 AND 180`]
+  DFLT_YN TEXT [not null, default: 'N', check: `DFLT_YN IN ('Y', 'N')`]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  DEL_YN TEXT [not null, default: 'N', check: `DEL_YN IN ('Y', 'N')`]
+  indexes {
+    MBR_ID [name: 'UK_MBR_ADDR_DFLT', note: '조건부 UNIQUE: WHERE 조건을 만족하는 행 사이에서만 유일. CREATE UNIQUE INDEX UK_MBR_ADDR_DFLT ON TB_MBR_ADDR (MBR_ID) WHERE DFLT_YN = \'Y\' AND DEL_YN = \'N\'']
+    MBR_ID [name: 'IX_MBR_ADDR_MBR']
+  }
+  Note: '2 회원주소 / 트리거: TRG_MBR_ADDR_MOD_DTTM'
+}
+
+Table TB_RIDER {
+  MBR_ID INTEGER [pk]
+  RIDER_STTS TEXT [not null, default: 'IDLE', check: `RIDER_STTS IN ('IDLE', 'BUSY')`]
+  VHCL_TYPE_CD TEXT [not null, check: `VHCL_TYPE_CD IN ('WALK', 'BICYCLE', 'MOTORCYCLE', 'CAR')`]
+  ACT_RADIUS_M INTEGER [not null, default: 3000, check: `ACT_RADIUS_M BETWEEN 500 AND 5000`]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  Note: '3 라이더 (기준 좌표 컬럼 없음: 라이더 위치는 API의 숭실대 좌표 상수) / 트리거: TRG_RIDER_MOD_DTTM'
+}
+
+Table TB_STORE {
+  STORE_ID INTEGER [pk, increment]
+  OWNR_MBR_ID INTEGER [not null]
+  STORE_NM TEXT [not null]
+  STORE_CTGR_CD TEXT [not null, check: `STORE_CTGR_CD IN ('CHICKEN', 'PIZZA', 'KOREAN', 'CHINESE', 'JAPANESE', 'SNACK', 'CAFE', 'ETC')`]
+  BIZ_NO TEXT [not null, unique, check: `BIZ_NO GLOB '[0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9]'`]
+  STORE_TELNO TEXT [not null]
+  STORE_ADDR TEXT [not null]
+  STORE_DADDR TEXT
+  STORE_LAT REAL [not null, check: `STORE_LAT BETWEEN -90 AND 90`]
+  STORE_LNG REAL [not null, check: `STORE_LNG BETWEEN -180 AND 180`]
+  STORE_CN TEXT [note: '가게 소개']
+  MIN_ORD_AMT INTEGER [not null, check: `MIN_ORD_AMT >= 0`]
+  DLVR_TIP_AMT INTEGER [not null, check: `DLVR_TIP_AMT >= 0`]
+  COOK_EST_MI INTEGER [not null, check: `COOK_EST_MI > 0`, note: '기본 조리시간(분). 11/08 DLVR_EST_MI 대체']
+  STORE_OPER_STTS TEXT [not null, default: 'PAUSED', check: `STORE_OPER_STTS IN ('OPEN', 'PAUSED')`, note: 'CLOSED는 조회 때 계산']
+  STORE_APRV_STTS TEXT [not null, default: 'PENDING', check: `STORE_APRV_STTS IN ('PENDING', 'APPROVED', 'REJECTED')`, note: 'TB_STORE_APRV와 같은 트랜잭션에서 갱신']
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  DEL_YN TEXT [not null, default: 'N', check: `DEL_YN IN ('Y', 'N')`]
+  indexes {
+    OWNR_MBR_ID [name: 'IX_STORE_OWNR']
+  }
+  Note: '4 가게 (평점은 저장하지 않음: V_STORE_RATING) / 트리거: TRG_STORE_MOD_DTTM'
+}
+
+Table TB_STORE_HOURS {
+  STORE_HOURS_ID INTEGER [pk, increment]
+  STORE_ID INTEGER [not null]
+  DAY_OF_WEEK INTEGER [not null, check: `DAY_OF_WEEK BETWEEN 0 AND 6`, note: '0(일)~6(토)']
+  OPEN_TM TEXT [not null, check: `OPEN_TM GLOB '[0-2][0-9]:[0-5][0-9]' AND OPEN_TM < '24:00'`]
+  CLOSE_TM TEXT [not null, check: `CLOSE_TM GLOB '[0-2][0-9]:[0-5][0-9]' AND CLOSE_TM <= '24:00'`, note: '자정은 24:00']
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  checks {
+    `OPEN_TM < CLOSE_TM`
+  }
+  indexes {
+    (STORE_ID, DAY_OF_WEEK) [name: 'IX_STORE_HOURS_STORE_DAY']
+  }
+  Note: '신규 가게영업시간 (요일에 행이 여러 개면 브레이크 타임, 행이 없는 요일은 휴무) / 트리거: TRG_STORE_HOURS_MOD_DTTM'
+}
+
+Table TB_STORE_APRV {
+  STORE_APRV_ID INTEGER [pk, increment]
+  STORE_ID INTEGER [not null]
+  STORE_APRV_STTS TEXT [not null, default: 'PENDING', check: `STORE_APRV_STTS IN ('PENDING', 'APPROVED', 'REJECTED')`]
+  APLY_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  PRCSR_MBR_ID INTEGER
+  PRCS_DTTM TEXT
+  RJCT_RSN_CN TEXT
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  checks {
+    `(STORE_APRV_STTS = 'PENDING') = (PRCSR_MBR_ID IS NULL)`
+    `(STORE_APRV_STTS = 'PENDING') = (PRCS_DTTM IS NULL)`
+    `(STORE_APRV_STTS = 'REJECTED') = (RJCT_RSN_CN IS NOT NULL)`
+  }
+  indexes {
+    STORE_ID [name: 'UK_STORE_APRV_PENDING', note: '조건부 UNIQUE: WHERE 조건을 만족하는 행 사이에서만 유일. CREATE UNIQUE INDEX UK_STORE_APRV_PENDING ON TB_STORE_APRV (STORE_ID) WHERE STORE_APRV_STTS = \'PENDING\'']
+  }
+  Note: '5 입점승인 (재신청 시 새 행) / 처리 전(PENDING) ⇔ 처리자·처리일시 없음, 반려 ⇔ 반려 사유 / 트리거: TRG_STORE_APRV_MOD_DTTM, TRG_STORE_APRV_BLOCK_DELETED_STORE'
+}
+
+Table TB_MENU_CTGR {
+  CTGR_ID INTEGER [pk, increment]
+  STORE_ID INTEGER [not null]
+  CTGR_NM TEXT [not null]
+  CTGR_SEQ INTEGER [not null]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  DEL_YN TEXT [not null, default: 'N', check: `DEL_YN IN ('Y', 'N')`]
+  indexes {
+    (STORE_ID, CTGR_NM) [name: 'UK_MENU_CTGR_STORE_NM', note: '조건부 UNIQUE: WHERE 조건을 만족하는 행 사이에서만 유일. CREATE UNIQUE INDEX UK_MENU_CTGR_STORE_NM ON TB_MENU_CTGR (STORE_ID, CTGR_NM) WHERE DEL_YN = \'N\'']
+    (STORE_ID, CTGR_SEQ) [name: 'IX_MENU_CTGR_STORE_SEQ']
+  }
+  Note: '신규 메뉴분류 / 트리거: TRG_MENU_CTGR_MOD_DTTM'
+}
+
+Table TB_MENU {
+  MENU_ID INTEGER [pk, increment]
+  STORE_ID INTEGER [not null]
+  CTGR_ID INTEGER [not null]
+  MENU_NM TEXT [not null]
+  MENU_AMT INTEGER [not null, check: `MENU_AMT >= 0`]
+  MENU_CN TEXT
+  MENU_SEQ INTEGER [not null]
+  MENU_SALE_STTS TEXT [not null, default: 'ON_SALE', check: `MENU_SALE_STTS IN ('ON_SALE', 'SOLD_OUT')`]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  DEL_YN TEXT [not null, default: 'N', check: `DEL_YN IN ('Y', 'N')`]
+  indexes {
+    (CTGR_ID, MENU_SEQ) [name: 'IX_MENU_CTGR_SEQ']
+    STORE_ID [name: 'IX_MENU_STORE']
+  }
+  Note: '6 메뉴 / 트리거: TRG_MENU_MOD_DTTM'
+}
+
+Table TB_MENU_OPT_GRP {
+  OPT_GRP_ID INTEGER [pk, increment]
+  MENU_ID INTEGER [not null]
+  OPT_GRP_NM TEXT [not null]
+  RQRD_YN TEXT [not null, default: 'N', check: `RQRD_YN IN ('Y', 'N')`]
+  MAX_SLCT_CNT INTEGER [not null, default: 1, check: `MAX_SLCT_CNT >= 1`]
+  OPT_GRP_SEQ INTEGER [not null]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  DEL_YN TEXT [not null, default: 'N', check: `DEL_YN IN ('Y', 'N')`]
+  indexes {
+    (MENU_ID, OPT_GRP_SEQ) [name: 'IX_OPT_GRP_MENU_SEQ']
+  }
+  Note: '7 메뉴옵션그룹 (순서는 논리 삭제·순서 변경과 충돌하므로 일반 인덱스) / 트리거: TRG_MENU_OPT_GRP_MOD_DTTM'
+}
+
+Table TB_MENU_OPT {
+  OPT_ID INTEGER [pk, increment]
+  OPT_GRP_ID INTEGER [not null]
+  OPT_NM TEXT [not null]
+  OPT_AMT INTEGER [not null, default: 0, check: `OPT_AMT >= 0`]
+  OPT_SEQ INTEGER [not null]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  DEL_YN TEXT [not null, default: 'N', check: `DEL_YN IN ('Y', 'N')`]
+  indexes {
+    (OPT_GRP_ID, OPT_SEQ) [name: 'IX_OPT_GRP_OPT_SEQ']
+  }
+  Note: '8 메뉴옵션 / 트리거: TRG_MENU_OPT_MOD_DTTM'
+}
+
+Table TB_CART {
+  CART_ID INTEGER [pk, increment]
+  MBR_ID INTEGER [not null, unique]
+  STORE_ID INTEGER [not null]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  Note: '9 장바구니 (회원당 1개, 한 가게의 메뉴만: 가게 일치는 서버 검사) / 트리거: TRG_CART_MOD_DTTM'
+}
+
+Table TB_CART_DTL {
+  CART_DTL_ID INTEGER [pk, increment]
+  CART_ID INTEGER [not null]
+  MENU_ID INTEGER [not null]
+  CART_QTY INTEGER [not null, default: 1, check: `CART_QTY >= 1`]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  indexes {
+    CART_ID [name: 'IX_CART_DTL_CART']
+  }
+  Note: '10 장바구니항목 (장바구니를 지우면 함께 삭제) / 트리거: TRG_CART_DTL_MOD_DTTM'
+}
+
+Table TB_CART_DTL_OPT {
+  CART_DTL_OPT_ID INTEGER [pk, increment]
+  CART_DTL_ID INTEGER [not null]
+  OPT_ID INTEGER [not null]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  indexes {
+    (CART_DTL_ID, OPT_ID) [unique, note: 'UNIQUE 제약']
+  }
+  Note: '11 장바구니항목옵션'
+}
+
+Table TB_ORD {
+  ORD_ID INTEGER [pk, increment]
+  MBR_ID INTEGER [not null]
+  STORE_ID INTEGER [not null]
+  ORD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  ORD_STTS TEXT [not null, default: 'WAIT', check: `ORD_STTS IN ('WAIT', 'COOKING', 'READY', 'DELIVERING', 'DONE', 'CANCEL')`]
+  ORD_TOT_AMT INTEGER [not null, check: `ORD_TOT_AMT >= 0`, note: '메뉴·옵션 합계 (배달팁 제외)']
+  DLVR_TIP_AMT INTEGER [not null, check: `DLVR_TIP_AMT >= 0`, note: '주문 시점 배달팁']
+  STORE_RQST_CN TEXT
+  RIDER_RQST_CN TEXT
+  CUTLERY_YN TEXT [not null, default: 'N', check: `CUTLERY_YN IN ('Y', 'N')`]
+  DLVR_ADDR TEXT [not null]
+  DLVR_DADDR TEXT
+  DLVR_LAT REAL [not null, check: `DLVR_LAT BETWEEN -90 AND 90`]
+  DLVR_LNG REAL [not null, check: `DLVR_LNG BETWEEN -180 AND 180`]
+  ORD_RCPT_DTTM TEXT
+  COOK_EST_MI INTEGER [check: `COOK_EST_MI > 0`, note: '이 주문의 조리 예상분']
+  ORD_CNCL_DTTM TEXT
+  CNCL_ACTR_CD TEXT [check: `CNCL_ACTR_CD IN ('CUSTOMER', 'OWNER', 'SYSTEM', 'ADMIN')`]
+  CNCL_RSN_CD TEXT [check: `CNCL_RSN_CD IN ('OUT_OF_STOCK', 'BUSY', 'CLOSING', 'CANNOT_COOK', 'NO_RESPONSE', 'CUSTOMER_REQUEST', 'STORE_ISSUE', 'DELIVERY_FAIL', 'ETC')`]
+  ORD_CNCL_RSN_CN TEXT [note: '사유 상세 (ETC일 때 필수)']
+  CNCL_PRCSR_MBR_ID INTEGER [note: '고객센터 취소 처리 관리자']
+  CNSL_MEMO_CN TEXT [note: '고객센터 상담 메모']
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  checks {
+    `(ORD_RCPT_DTTM IS NULL) = (COOK_EST_MI IS NULL)`
+    `ORD_STTS NOT IN ('COOKING', 'READY', 'DELIVERING', 'DONE') OR ORD_RCPT_DTTM IS NOT NULL`
+    `ORD_STTS <> 'WAIT' OR ORD_RCPT_DTTM IS NULL`
+    `(ORD_STTS = 'CANCEL') = (ORD_CNCL_DTTM IS NOT NULL)`
+    `(ORD_STTS = 'CANCEL') = (CNCL_ACTR_CD IS NOT NULL)`
+    `(ORD_STTS = 'CANCEL') = (CNCL_RSN_CD IS NOT NULL)`
+    `ORD_STTS = 'CANCEL' OR ORD_CNCL_RSN_CN IS NULL`
+    `CNCL_ACTR_CD IS NOT 'CUSTOMER' OR CNCL_RSN_CD = 'CUSTOMER_REQUEST'`
+    `CNCL_ACTR_CD IS NOT 'SYSTEM' OR CNCL_RSN_CD = 'NO_RESPONSE'`
+    `CNCL_RSN_CD IS NOT 'ETC' OR ORD_CNCL_RSN_CN IS NOT NULL`
+    `(CNCL_ACTR_CD IS 'ADMIN') = (CNCL_PRCSR_MBR_ID IS NOT NULL)`
+    `(CNCL_ACTR_CD IS 'ADMIN') = (CNSL_MEMO_CN IS NOT NULL)`
+  }
+  indexes {
+    (ORD_STTS, ORD_DTTM) [name: 'IX_ORD_STTS_DTTM']
+    (STORE_ID, ORD_DTTM) [name: 'IX_ORD_STORE_DTTM']
+    (MBR_ID, ORD_DTTM) [name: 'IX_ORD_MBR_DTTM']
+  }
+  Note: '12 주문 / READY = 조리완료·픽업대기 (배차대기 아님) / 접수일시와 조리예상분은 함께 기록. 접수 이후 상태는 둘 다 필수, WAIT는 둘 다 없음 (CANCEL은 접수 전후 모두 가능) / 취소 상태 ⇔ 취소일시·취소주체 / 취소 주문 ⇔ 취소 사유 코드. 고객 직접 취소는 CUSTOMER_REQUEST, 자동 취소는 NO_RESPONSE. ETC면 상세 필수 / 관리자(고객센터) 취소 ⇔ 처리 관리자·상담 메모 / 트리거: TRG_ORD_MOD_DTTM, TRG_ORD_CANCEL'
+}
+
+Table TB_ORD_DTL {
+  ORD_DTL_ID INTEGER [pk, increment]
+  ORD_ID INTEGER [not null]
+  ORD_DTL_SEQ INTEGER [not null]
+  MENU_ID INTEGER [not null]
+  ORD_MENU_NM TEXT [not null]
+  ORD_QTY INTEGER [not null, check: `ORD_QTY >= 1`]
+  ORD_UPRC INTEGER [not null, check: `ORD_UPRC >= 0`, note: '옵션 제외 단가']
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  indexes {
+    MENU_ID [name: 'IX_ORD_DTL_MENU']
+    (ORD_ID, ORD_DTL_SEQ) [unique, note: 'UNIQUE 제약']
+  }
+  Note: '13 주문상세 (메뉴명·단가 스냅샷)'
+}
+
+Table TB_ORD_DTL_OPT {
+  ORD_DTL_OPT_ID INTEGER [pk, increment]
+  ORD_DTL_ID INTEGER [not null]
+  OPT_ID INTEGER [not null]
+  ORD_OPT_GRP_NM TEXT [not null]
+  ORD_OPT_NM TEXT [not null]
+  ORD_OPT_AMT INTEGER [not null, check: `ORD_OPT_AMT >= 0`]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  indexes {
+    ORD_DTL_ID [name: 'IX_ORD_DTL_OPT_DTL']
+  }
+  Note: '14 주문상세옵션 (옵션 그룹명·옵션명·금액 스냅샷)'
+}
+
+Table TB_PAY {
+  PAY_ID INTEGER [pk, increment]
+  ORD_ID INTEGER [not null, unique]
+  PAY_MTHD_CD TEXT [not null, check: `PAY_MTHD_CD IN ('CARD', 'KAKAO', 'NAVER', 'POINT')`]
+  PAY_AMT INTEGER [not null, check: `PAY_AMT >= 0`, note: 'ORD_TOT_AMT + DLVR_TIP_AMT']
+  PAY_STTS TEXT [not null, default: 'READY', check: `PAY_STTS IN ('READY', 'APPROVED', 'CANCELED')`]
+  PAY_REF_NO TEXT
+  PAY_APRV_DTTM TEXT
+  PAY_CNCL_DTTM TEXT
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  checks {
+    `PAY_STTS <> 'APPROVED' OR PAY_APRV_DTTM IS NOT NULL`
+    `(PAY_STTS = 'CANCELED') = (PAY_CNCL_DTTM IS NOT NULL)`
+  }
+  Note: '15 결제 (주문당 1건, 단일 결제수단) / 트리거: TRG_PAY_MOD_DTTM'
+}
+
+Table TB_PNT_TXN {
+  PNT_TXN_ID INTEGER [pk, increment]
+  MBR_ID INTEGER [not null]
+  ORD_ID INTEGER
+  PNT_TXN_TYPE_CD TEXT [not null, check: `PNT_TXN_TYPE_CD IN ('CHARGE', 'USE', 'REFUND', 'EXPIRE')`]
+  PNT_TXN_AMT INTEGER [not null, check: `PNT_TXN_AMT > 0`]
+  PNT_BAL_AMT INTEGER [not null, check: `PNT_BAL_AMT >= 0`, note: '거래 직후 잔액']
+  CHRG_MTHD_CD TEXT [check: `CHRG_MTHD_CD IN ('CARD', 'KAKAO', 'NAVER')`]
+  PNT_TXN_STTS TEXT [not null, default: 'COMPLETED', check: `PNT_TXN_STTS IN ('READY', 'COMPLETED', 'CANCELED')`]
+  PNT_TXN_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  checks {
+    `(PNT_TXN_TYPE_CD = 'CHARGE') = (CHRG_MTHD_CD IS NOT NULL)`
+    `(PNT_TXN_TYPE_CD IN ('USE', 'REFUND')) = (ORD_ID IS NOT NULL)`
+  }
+  indexes {
+    (ORD_ID, PNT_TXN_TYPE_CD) [name: 'UK_PNT_TXN_ORD_TYPE', note: '조건부 UNIQUE: WHERE 조건을 만족하는 행 사이에서만 유일. CREATE UNIQUE INDEX UK_PNT_TXN_ORD_TYPE ON TB_PNT_TXN (ORD_ID, PNT_TXN_TYPE_CD) WHERE ORD_ID IS NOT NULL']
+    (MBR_ID, PNT_TXN_DTTM) [name: 'IX_PNT_TXN_MBR_DTTM']
+  }
+  Note: '16 포인트거래 (금액은 양수, CHARGE/REFUND 증가, USE/EXPIRE 감소) / 충전 ⇔ 충전수단, 사용·환불은 주문 연결, 충전·소멸은 주문 없음'
+}
+
+Table TB_DLVR {
+  DLVR_ID INTEGER [pk, increment]
+  ORD_ID INTEGER [not null, unique]
+  RIDER_MBR_ID INTEGER
+  DSPCH_DTTM TEXT
+  PKUP_DTTM TEXT
+  DLVR_CMPL_DTTM TEXT
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  checks {
+    `(RIDER_MBR_ID IS NULL) = (DSPCH_DTTM IS NULL)`
+    `PKUP_DTTM IS NULL OR (DSPCH_DTTM IS NOT NULL AND PKUP_DTTM >= DSPCH_DTTM)`
+    `DLVR_CMPL_DTTM IS NULL OR (PKUP_DTTM IS NOT NULL AND DLVR_CMPL_DTTM >= PKUP_DTTM)`
+  }
+  indexes {
+    (RIDER_MBR_ID, REG_DTTM) [name: 'IX_DLVR_RIDER_REG']
+    (RIDER_MBR_ID, DLVR_CMPL_DTTM) [name: 'IX_DLVR_RIDER_CMPL']
+  }
+  Note: '17 배달 (사장 접수 때 생성, RIDER_MBR_ID NULL = 배차 요청. 상태 컬럼 없이 일시로 판단) / 배차 ⇔ 라이더·배차일시, 배차 → 픽업 → 완료 순서 / 트리거: TRG_DLVR_MOD_DTTM'
+}
+
+Table TB_RVW {
+  RVW_ID INTEGER [pk, increment]
+  ORD_ID INTEGER [not null, unique]
+  RVW_RTNG INTEGER [not null, check: `RVW_RTNG BETWEEN 1 AND 5`]
+  RVW_CN TEXT [note: '내용 없으면 NULL']
+  RVW_HDN_YN TEXT [not null, default: 'N', check: `RVW_HDN_YN IN ('Y', 'N')`]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  DEL_YN TEXT [not null, default: 'N', check: `DEL_YN IN ('Y', 'N')`]
+  Note: '18 리뷰 (주문당 1건. 작성 조건 DONE+3일·제한 여부는 서버 검사) / 트리거: TRG_RVW_MOD_DTTM'
+}
+
+Table TB_RVW_REPLY {
+  RVW_REPLY_ID INTEGER [pk, increment]
+  RVW_ID INTEGER [not null, unique]
+  OWNR_MBR_ID INTEGER [not null]
+  RVW_REPLY_CN TEXT [not null]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  MOD_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  DEL_YN TEXT [not null, default: 'N', check: `DEL_YN IN ('Y', 'N')`]
+  Note: '19 리뷰답글 (리뷰당 1건. 다시 달 때는 삭제된 행을 되살림) / 트리거: TRG_RVW_REPLY_MOD_DTTM'
+}
+
+Table TB_RVW_RPT {
+  RVW_RPT_ID INTEGER [pk, increment]
+  RVW_ID INTEGER [not null]
+  RPTR_MBR_ID INTEGER [not null]
+  RVW_RPT_RSN_CD TEXT [not null, check: `RVW_RPT_RSN_CD IN ('ABUSE', 'FALSE', 'UNRELATED', 'ETC')`]
+  RVW_RPT_CN TEXT [not null]
+  RVW_RPT_STTS TEXT [not null, default: 'PENDING', check: `RVW_RPT_STTS IN ('PENDING', 'ACCEPTED', 'REJECTED')`]
+  PRCSR_MBR_ID INTEGER
+  PRCS_DTTM TEXT
+  PRCS_CN TEXT
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  checks {
+    `(RVW_RPT_STTS = 'PENDING') = (PRCSR_MBR_ID IS NULL)`
+    `(RVW_RPT_STTS = 'PENDING') = (PRCS_DTTM IS NULL)`
+  }
+  indexes {
+    (RVW_RPT_STTS, REG_DTTM) [name: 'IX_RVW_RPT_STTS_REG']
+    (RVW_ID, RPTR_MBR_ID) [unique, note: 'UNIQUE 제약']
+  }
+  Note: '20 리뷰신고 (같은 회원은 같은 리뷰를 한 번만) / 처리 전(PENDING) ⇔ 처리자·처리일시 없음'
+}
+
+Table TB_MBR_RSTR {
+  MBR_RSTR_ID INTEGER [pk, increment]
+  MBR_ID INTEGER [not null]
+  RVW_RPT_ID INTEGER
+  RSTR_TYPE_CD TEXT [not null, check: `RSTR_TYPE_CD IN ('REVIEW_WRITE')`]
+  RSTR_STRT_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  RSTR_END_DTTM TEXT
+  RSTR_RSN_CN TEXT [not null]
+  PRCSR_MBR_ID INTEGER [not null]
+  REG_DTTM TEXT [not null, default: `datetime('now', 'localtime')`]
+  checks {
+    `RSTR_END_DTTM IS NULL OR RSTR_END_DTTM >= RSTR_STRT_DTTM`
+  }
+  indexes {
+    (MBR_ID, RSTR_TYPE_CD) [name: 'IX_MBR_RSTR_MBR_TYPE']
+  }
+  Note: '21 회원제한 (종료일시 NULL = 해제 전까지. 활성 제한 중복은 서버 검사)'
+}
+
+Table V_STORE_RATING [headercolor: #7F8C8D] {
+  STORE_ID INTEGER
+  AVG_RTNG expr
+  RVW_CNT expr
+  Note: '''
+VIEW (가상 테이블, 저장하지 않음)
+원본: TB_STORE, TB_ORD, TB_RVW
+
+CREATE VIEW V_STORE_RATING AS
+SELECT s.STORE_ID,
+       ROUND(AVG(r.RVW_RTNG), 1) AS AVG_RTNG,
+       COUNT(r.RVW_ID)           AS RVW_CNT
+  FROM TB_STORE s
+  LEFT JOIN TB_ORD o ON o.STORE_ID = s.STORE_ID
+  LEFT JOIN TB_RVW r ON r.ORD_ID = o.ORD_ID AND r.RVW_HDN_YN = 'N' AND r.DEL_YN = 'N'
+ GROUP BY s.STORE_ID
+'''
+}
+
+Table V_DONE_ORDER [headercolor: #7F8C8D] {
+  ORD_ID INTEGER
+  STORE_ID INTEGER
+  MBR_ID INTEGER
+  ORD_DTTM TEXT
+  DLVR_CMPL_DTTM TEXT
+  SALES_DT expr
+  ORD_TOT_AMT INTEGER
+  DLVR_TIP_AMT INTEGER
+  Note: '''
+VIEW (가상 테이블, 저장하지 않음)
+원본: TB_ORD, TB_DLVR
+
+CREATE VIEW V_DONE_ORDER AS
+SELECT o.ORD_ID,
+       o.STORE_ID,
+       o.MBR_ID,
+       o.ORD_DTTM,
+       d.DLVR_CMPL_DTTM,
+       date(d.DLVR_CMPL_DTTM) AS SALES_DT,
+       o.ORD_TOT_AMT,
+       o.DLVR_TIP_AMT
+  FROM TB_ORD o
+  JOIN TB_DLVR d ON d.ORD_ID = o.ORD_ID
+ WHERE o.ORD_STTS = 'DONE'
+'''
+}
+
+Table V_RIDER_DONE_DELIVERY [headercolor: #7F8C8D] {
+  DLVR_ID INTEGER
+  RIDER_MBR_ID INTEGER
+  ORD_ID INTEGER
+  STORE_ID INTEGER
+  DLVR_ADDR TEXT
+  PKUP_DTTM TEXT
+  DLVR_CMPL_DTTM TEXT
+  CMPL_DT expr
+  WEEK_START_DT expr
+  MONTH expr
+  DLVR_TIP_AMT INTEGER
+  Note: '''
+VIEW (가상 테이블, 저장하지 않음)
+원본: TB_DLVR, TB_ORD
+
+CREATE VIEW V_RIDER_DONE_DELIVERY AS
+SELECT d.DLVR_ID,
+       d.RIDER_MBR_ID,
+       o.ORD_ID,
+       o.STORE_ID,
+       o.DLVR_ADDR,
+       d.PKUP_DTTM,
+       d.DLVR_CMPL_DTTM,
+       date(d.DLVR_CMPL_DTTM) AS CMPL_DT,
+       date(d.DLVR_CMPL_DTTM, 'weekday 0', '-6 days') AS WEEK_START_DT,
+       strftime('%Y-%m', d.DLVR_CMPL_DTTM) AS MONTH,
+       o.DLVR_TIP_AMT
+  FROM TB_DLVR d
+  JOIN TB_ORD o ON o.ORD_ID = d.ORD_ID
+ WHERE o.ORD_STTS = 'DONE'
+   AND d.RIDER_MBR_ID IS NOT NULL
+   AND d.DLVR_CMPL_DTTM IS NOT NULL
+'''
+}
+
+Ref: TB_MBR_ADDR.MBR_ID > TB_MBR.MBR_ID
+Ref: TB_MBR.MBR_ID - TB_RIDER.MBR_ID
+Ref: TB_STORE.OWNR_MBR_ID > TB_MBR.MBR_ID
+Ref: TB_STORE_HOURS.STORE_ID > TB_STORE.STORE_ID
+Ref: TB_STORE_APRV.PRCSR_MBR_ID >? TB_MBR.MBR_ID
+Ref: TB_STORE_APRV.STORE_ID > TB_STORE.STORE_ID
+Ref: TB_MENU_CTGR.STORE_ID > TB_STORE.STORE_ID
+Ref: TB_MENU.CTGR_ID > TB_MENU_CTGR.CTGR_ID
+Ref: TB_MENU.STORE_ID > TB_STORE.STORE_ID
+Ref: TB_MENU_OPT_GRP.MENU_ID > TB_MENU.MENU_ID
+Ref: TB_MENU_OPT.OPT_GRP_ID > TB_MENU_OPT_GRP.OPT_GRP_ID
+Ref: TB_CART.STORE_ID > TB_STORE.STORE_ID
+Ref: TB_MBR.MBR_ID - TB_CART.MBR_ID
+Ref: TB_CART_DTL.MENU_ID > TB_MENU.MENU_ID
+Ref: TB_CART_DTL.CART_ID > TB_CART.CART_ID [delete: cascade]
+Ref: TB_CART_DTL_OPT.OPT_ID > TB_MENU_OPT.OPT_ID
+Ref: TB_CART_DTL_OPT.CART_DTL_ID > TB_CART_DTL.CART_DTL_ID [delete: cascade]
+Ref: TB_ORD.CNCL_PRCSR_MBR_ID >? TB_MBR.MBR_ID
+Ref: TB_ORD.STORE_ID > TB_STORE.STORE_ID
+Ref: TB_ORD.MBR_ID > TB_MBR.MBR_ID
+Ref: TB_ORD_DTL.MENU_ID > TB_MENU.MENU_ID
+Ref: TB_ORD_DTL.ORD_ID > TB_ORD.ORD_ID
+Ref: TB_ORD_DTL_OPT.OPT_ID > TB_MENU_OPT.OPT_ID
+Ref: TB_ORD_DTL_OPT.ORD_DTL_ID > TB_ORD_DTL.ORD_DTL_ID
+Ref: TB_ORD.ORD_ID - TB_PAY.ORD_ID
+Ref: TB_PNT_TXN.ORD_ID >? TB_ORD.ORD_ID
+Ref: TB_PNT_TXN.MBR_ID > TB_MBR.MBR_ID
+Ref: TB_DLVR.RIDER_MBR_ID >? TB_RIDER.MBR_ID
+Ref: TB_ORD.ORD_ID - TB_DLVR.ORD_ID
+Ref: TB_ORD.ORD_ID - TB_RVW.ORD_ID
+Ref: TB_RVW_REPLY.OWNR_MBR_ID > TB_MBR.MBR_ID
+Ref: TB_RVW.RVW_ID - TB_RVW_REPLY.RVW_ID
+Ref: TB_RVW_RPT.PRCSR_MBR_ID >? TB_MBR.MBR_ID
+Ref: TB_RVW_RPT.RPTR_MBR_ID > TB_MBR.MBR_ID
+Ref: TB_RVW_RPT.RVW_ID > TB_RVW.RVW_ID
+Ref: TB_MBR_RSTR.PRCSR_MBR_ID > TB_MBR.MBR_ID
+Ref: TB_MBR_RSTR.RVW_RPT_ID >? TB_RVW_RPT.RVW_RPT_ID
+Ref: TB_MBR_RSTR.MBR_ID > TB_MBR.MBR_ID
+
+TableGroup 회원 [color: #3498DB] {
+  TB_MBR
+  TB_MBR_ADDR
+  TB_RIDER
+}
+
+TableGroup 가게_메뉴 [color: #24BAB1] {
+  TB_STORE
+  TB_STORE_HOURS
+  TB_STORE_APRV
+  TB_MENU_CTGR
+  TB_MENU
+  TB_MENU_OPT_GRP
+  TB_MENU_OPT
+}
+
+TableGroup 장바구니 [color: #8E44AD] {
+  TB_CART
+  TB_CART_DTL
+  TB_CART_DTL_OPT
+}
+
+TableGroup 주문_결제 [color: #E67E22] {
+  TB_ORD
+  TB_ORD_DTL
+  TB_ORD_DTL_OPT
+  TB_PAY
+  TB_PNT_TXN
+}
+
+TableGroup 배달 [color: #2C3E50] {
+  TB_DLVR
+}
+
+TableGroup 리뷰_신고 [color: #C0392B] {
+  TB_RVW
+  TB_RVW_REPLY
+  TB_RVW_RPT
+  TB_MBR_RSTR
+}
+
+TableGroup VIEW [color: #7F8C8D, note: 'VIEW (가상 테이블)'] {
+  V_STORE_RATING
+  V_DONE_ORDER
+  V_RIDER_DONE_DELIVERY
+}
+
+Note triggers_business {
+  '''
+업무 트리거 2개
+
+CREATE TRIGGER TRG_STORE_APRV_BLOCK_DELETED_STORE
+BEFORE UPDATE OF STORE_APRV_STTS ON TB_STORE_APRV
+FOR EACH ROW
+WHEN NEW.STORE_APRV_STTS <> OLD.STORE_APRV_STTS
+  AND EXISTS (SELECT 1 FROM TB_STORE WHERE STORE_ID = NEW.STORE_ID AND DEL_YN = 'Y')
+BEGIN
+  SELECT RAISE(ABORT, 'STORE_APRV_STORE_DELETED');
+END
+
+CREATE TRIGGER TRG_ORD_CANCEL
+AFTER UPDATE OF ORD_STTS ON TB_ORD
+FOR EACH ROW
+WHEN NEW.ORD_STTS = 'CANCEL' AND OLD.ORD_STTS <> 'CANCEL'
+BEGIN
+  -- 1. POINT 결제(승인됨)면 회원 잔액을 결제금액만큼 늘린다
+  UPDATE TB_MBR
+     SET PNT_BAL_AMT = PNT_BAL_AMT + (SELECT p.PAY_AMT FROM TB_PAY p WHERE p.ORD_ID = NEW.ORD_ID)
+   WHERE MBR_ID = NEW.MBR_ID
+     AND EXISTS (SELECT 1 FROM TB_PAY p
+                  WHERE p.ORD_ID = NEW.ORD_ID AND p.PAY_MTHD_CD = 'POINT' AND p.PAY_STTS = 'APPROVED');
+
+  -- 2. 환불 거래를 거래 후 잔액과 함께 기록한다 (결제금액 0원이면 거래 없음)
+  INSERT INTO TB_PNT_TXN (MBR_ID, ORD_ID, PNT_TXN_TYPE_CD, PNT_TXN_AMT, PNT_BAL_AMT, PNT_TXN_STTS, PNT_TXN_DTTM)
+  SELECT NEW.MBR_ID, NEW.ORD_ID, 'REFUND', p.PAY_AMT, m.PNT_BAL_AMT, 'COMPLETED', datetime('now', 'localtime')
+    FROM TB_PAY p
+    JOIN TB_MBR m ON m.MBR_ID = NEW.MBR_ID
+   WHERE p.ORD_ID = NEW.ORD_ID AND p.PAY_MTHD_CD = 'POINT' AND p.PAY_STTS = 'APPROVED' AND p.PAY_AMT > 0;
+
+  -- 3. 결제를 취소 처리한다 (결제수단과 관계없이)
+  UPDATE TB_PAY
+     SET PAY_STTS = 'CANCELED', PAY_CNCL_DTTM = datetime('now', 'localtime')
+   WHERE ORD_ID = NEW.ORD_ID AND PAY_STTS <> 'CANCELED';
+
+  -- 4. 배차된 라이더가 있고 배달이 끝나지 않았으면 라이더를 대기(IDLE)로 돌린다
+  UPDATE TB_RIDER
+     SET RIDER_STTS = 'IDLE'
+   WHERE MBR_ID = (SELECT d.RIDER_MBR_ID FROM TB_DLVR d
+                    WHERE d.ORD_ID = NEW.ORD_ID AND d.DLVR_CMPL_DTTM IS NULL);
+END
+'''
+}
+
+Note triggers_mod_dttm {
+  '''
+수정 시각 트리거 17개 (AFTER UPDATE, MOD_DTTM 을 직접 바꾸지 않았으면 현재 시각 기록)
+TRG_MBR_MOD_DTTM ON TB_MBR
+TRG_MBR_ADDR_MOD_DTTM ON TB_MBR_ADDR
+TRG_RIDER_MOD_DTTM ON TB_RIDER
+TRG_STORE_MOD_DTTM ON TB_STORE
+TRG_STORE_HOURS_MOD_DTTM ON TB_STORE_HOURS
+TRG_STORE_APRV_MOD_DTTM ON TB_STORE_APRV
+TRG_MENU_CTGR_MOD_DTTM ON TB_MENU_CTGR
+TRG_MENU_MOD_DTTM ON TB_MENU
+TRG_MENU_OPT_GRP_MOD_DTTM ON TB_MENU_OPT_GRP
+TRG_MENU_OPT_MOD_DTTM ON TB_MENU_OPT
+TRG_CART_MOD_DTTM ON TB_CART
+TRG_CART_DTL_MOD_DTTM ON TB_CART_DTL
+TRG_ORD_MOD_DTTM ON TB_ORD
+TRG_PAY_MOD_DTTM ON TB_PAY
+TRG_DLVR_MOD_DTTM ON TB_DLVR
+TRG_RVW_MOD_DTTM ON TB_RVW
+TRG_RVW_REPLY_MOD_DTTM ON TB_RVW_REPLY
+'''
+}
