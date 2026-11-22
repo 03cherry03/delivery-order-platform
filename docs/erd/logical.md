@@ -201,17 +201,18 @@ TB_ORD_DTL_OPT의 원래 복합 키 (ORD_DTL_ID, OPT_ID)는 DB 제약으로 보�
   - 라이더 주·월 배달팁: `V_RIDER_DONE_DELIVERY`
 - 배달 상태 컬럼은 없다. 배차·픽업·완료 일시로 상태를 판단하므로 상태와 일시가 어긋날 수 없다.
 
-### BCNF: 모든 결정자가 후보 키
+### BCNF: 모든 비자명한 함수 종속의 결정자가 슈퍼키
 
-위 "함수 종속" 표의 결정자를 릴레이션별로 확인했다.
+BCNF는 `X → Y`(Y가 X에 포함되지 않음)인 모든 종속에서 X가 슈퍼키(행 하나를 정하는 속성 집합)여야 한다는 조건이다. 위 "함수 종속" 표의 결정자를 릴레이션별로 확인했다.
 
-- 결정자가 모두 후보 키다: TB_STORE의 BIZ_NO, TB_ORD_DTL의 (ORD_ID, ORD_DTL_SEQ), TB_PAY·TB_DLVR·TB_RVW의 ORD_ID, TB_CART의 MBR_ID, TB_RVW_REPLY의 RVW_ID 등
-- 예외는 TB_MENU 하나다. `CTGR_ID → STORE_ID`에서 CTGR_ID는 TB_MENU의 후보 키가 아니다. 이 종속은 이행 종속(MENU_ID → CTGR_ID → STORE_ID)이기도 해서 3NF도 벗어난다. 일부러 둔 역정규화다(아래 표).
-- 따라서 TB_MENU를 뺀 22개 릴레이션은 BCNF를 만족한다.
+- 업무 종속의 결정자는 슈퍼키다: TB_STORE의 BIZ_NO, TB_ORD_DTL의 (ORD_ID, ORD_DTL_SEQ), TB_PAY·TB_DLVR·TB_RVW의 ORD_ID, TB_CART의 MBR_ID, TB_RVW_REPLY의 RVW_ID 등
+- `TB_MENU`는 BCNF를 벗어난다. `CTGR_ID → STORE_ID`에서 CTGR_ID는 TB_MENU의 슈퍼키가 아니다. 이 종속은 이행 종속(MENU_ID → CTGR_ID → STORE_ID)이기도 해서 3NF도 벗어난다. 일부러 둔 역정규화다(아래 표).
+- `TB_MBR_RSTR`도 형식적으로는 BCNF를 벗어난다. `RSTR_TYPE_CD`는 NOT NULL이고 CHECK가 `'REVIEW_WRITE'` 하나만 허용한다. 값이 늘 같으므로 슈퍼키가 아닌 `MBR_ID` 같은 속성도 이 값을 결정한다. 제한 유형을 하나 더 추가하면 이 종속은 사라진다. 업무 데이터의 중복이나 이상 현상은 생기지 않는다.
+- 위 두 릴레이션 말고는 BCNF를 벗어나는 종속을 찾지 못했다. 다만 이 판단은 위 표에 적은 종속을 기준으로 한 것이다.
 
 ### 역정규화와 그 이유
 
-같은 값이 두 곳 이상에 저장되는 곳이다. 한 릴레이션 안에서 정규형을 벗어나는 곳은 `TB_MENU.STORE_ID` 하나다. 나머지는 다른 릴레이션에서 계산하거나 복사할 수 있는 값을 함께 저장한 경우(릴레이션 사이 중복), 또는 주문 당시 값을 남긴 스냅샷이다. 각 항목에 무결성을 지키는 방법을 함께 적었다.
+같은 값이 두 곳 이상에 저장되는 곳이다. 업무 데이터 때문에 한 릴레이션 안에서 정규형을 벗어나는 곳은 `TB_MENU.STORE_ID` 하나다(`TB_MBR_RSTR`의 형식적 예외는 위 BCNF 절 참고). 나머지는 다른 릴레이션에서 계산하거나 복사할 수 있는 값을 함께 저장한 경우(릴레이션 사이 중복), 또는 주문 당시 값을 남긴 스냅샷이다. 각 항목에 무결성을 지키는 방법을 함께 적었다.
 
 | 위치 | 중복되는 값 | 이유 | 무결성 유지 |
 |---|---|---|---|
