@@ -6,6 +6,7 @@
 - DBMS: SQLite 3 (서버는 `better-sqlite3`로 접속). 연결마다 `PRAGMA foreign_keys = ON`
 - 그림: `physical.dbml`을 [dbdiagram.io](https://dbdiagram.io/d)에 붙여 넣는다. 읽는 법은 아래 "그림 읽는 법"에 있다. dbdiagram.io에서 내보낸 그림은 `physical-erd.png`, `physical-erd.pdf`다.
 - VIEW와 트리거는 정의 SQL과 실행 결과까지 `views-triggers.md`에 따로 정리했다.
+- 컬럼별 한글명·타입·NULL·기본값·키·CHECK는 테이블 정의서 `table-definition.md`에 있다.
 
 ## 구성
 
@@ -634,9 +635,11 @@ CREATE INDEX IX_MBR_RSTR_MBR_TYPE ON TB_MBR_RSTR (MBR_ID, RSTR_TYPE_CD);
 # 프로젝트 루트에서. server/delivery.db 는 건드리지 않는다 (메모리 DB 사용)
 node docs/erd/gen-dbml.mjs [SQL 폴더] > docs/erd/physical.dbml
 node docs/erd/gen-conceptual.mjs > docs/erd/conceptual.drawio
+node docs/erd/gen-dictionary.mjs [SQL 폴더] > docs/erd/table-definition.md
 ```
 
 - SQL 폴더 기본값은 `server/db`다.
 - `gen-dbml.mjs`는 `server/node_modules`의 `better-sqlite3`를 쓴다. 먼저 `npm run setup:server`가 필요하다(Node 24).
 - 실행하면 표준 오류에 개수를 출력한다. 기대값: `{"tables":23,"fks":38,"indexes":24,"partialUnique":5,"checks":92,"views":3,"triggers":19}`
+- `gen-dictionary.mjs`는 Node 24 내장 `node:sqlite`를 쓴다. 기대값: `{"tables":23,"columns":217}`
 - `schema.sql`이 바뀌면 위 "DDL" 절도 새 내용으로 바꾼다.
